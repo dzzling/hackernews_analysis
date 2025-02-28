@@ -3,6 +3,9 @@ import polars as pl
 import altair as alt
 from sklearn.decomposition import PCA
 from scipy.stats import spearmanr
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
 
 alt.data_transformers.enable("vegafusion")
 
@@ -70,3 +73,23 @@ for i in range(0, len(relevant_data.columns)):
             f"Spearman's rank correlation coefficient between {x_name} and {y_name} : {correlation}"
         )
         print(f"p-value: {p_value}")
+
+# %% Scale data for KMeans
+
+scaler = StandardScaler()
+feature_data = scaler.fit_transform(
+    relevant_data["descendants", "user_karma", "user_post_count"].to_numpy()
+)
+
+# %% Determine KMeans cluster number
+range_n_clusters = [2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+for n_clusters in range_n_clusters:
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    cluster_labels = kmeans.fit_predict(relevant_data.to_numpy())
+    silhouette_avg = silhouette_score(relevant_data.to_numpy(), cluster_labels)
+    print(
+        f"For n_clusters = {n_clusters}, the average silhouette_score is : {silhouette_avg}"
+    )
+
+## Result: 2 clusters seems to be the best fit -> No specific combinations of features -> Stopping

@@ -4,15 +4,19 @@ import altair as alt
 from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.inspection import permutation_importance
+import shap
 
 alt.data_transformers.enable("vegafusion")
+
+# TODO: Scaling?
 
 # %% Read into dataframe
 
 df = pl.read_csv("./../../data/v1/data.csv", ignore_errors=True)
 
-X = df["descendants", "user_karma", "user_post_count"]
-X = X.fill_null(0).fill_nan(0).to_numpy()
+features = df["descendants", "user_karma", "user_post_count"]
+X = features.fill_null(0).fill_nan(0).to_numpy()
 print(X.shape)
 y = df["score"].to_numpy()
 print(y.shape)
@@ -50,12 +54,33 @@ score = rf.score(X_test, y_test)
 print(score)
 
 # %% RF Default
-rf_default = RandomForestRegressor(random_state=42)
+""" rf_default = RandomForestRegressor(random_state=42)
 rf_default.fit(X_train, y_train)
 
 rf_default_score = rf_default.score(X_test, y_test)
-print(rf_default_score)
+print(rf_default_score) """
 
-# ?Cluster analysis, to detect if samples with similar feature combinations also have similar scores?
+# %% Get RF feature importance
+
+importances = rf.feature_importances_
+print("Model feature importances:")
+print(features.columns)
+print(importances)
+
+## Permutation importance
+
+result = permutation_importance(rf, X_test, y_test, n_repeats=10, random_state=42)
+perm_importances = result.importances_mean
+perm_std = result.importances_std
+
+print("Feature importances based on accuracy losses during feature permutation:")
+print(perm_importances)
+print(perm_std)
+
+# %% SHAP
+
+explainer = shap.TreeExplainer(rf)
+shap_values = explainer.shap_values(X_test)
+shap.summary_plot(shap_values, X_test, plot_type="bar")
 
 # %%
