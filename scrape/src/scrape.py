@@ -4,7 +4,7 @@ import json
 from bs4 import BeautifulSoup
 
 # List of URLs to scrape
-with open("./../data/links.json", "r") as f:
+with open("./../data/v1/links.json", "r") as f:
     URLS = json.load(f)
 
 # Database setup

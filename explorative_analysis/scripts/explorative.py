@@ -7,7 +7,9 @@ alt.data_transformers.enable("vegafusion")
 
 # %% Read into dataframe
 
-df = pl.read_csv("./../../data/data.csv", ignore_errors=True)
+df = pl.read_csv("./../../data/v1/data.csv", ignore_errors=True)
+
+print(f"Number of samples: {df.shape[0]}")
 
 # Exploring overall distributions
 
@@ -231,10 +233,3 @@ fig = (
     )
 )
 fig
-
-
-# %%
-
-# Plotting similarities of successful posts
-
-# %%

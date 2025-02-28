@@ -7,12 +7,12 @@ from bs4 import BeautifulSoup
 def save_links():
     urls_and_ids = {}
 
-    with open("./../data/data.csv", "r") as f:
+    with open("./../data/v1/data.csv", "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             urls_and_ids[row["id"]] = row["url"]
 
-    with open("./../data/links.json", "w") as p:
+    with open("./../data/v1/links.json", "w") as p:
         json.dump(urls_and_ids, p)
 
 
