@@ -4,15 +4,15 @@ import sqlite3
 from bs4 import BeautifulSoup
 
 
-def save_links():
+def save_links(version):
     urls_and_ids = {}
 
-    with open("./../data/v1/data.csv", "r") as f:
+    with open(f"data/{version}/30min_data.csv", "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             urls_and_ids[row["id"]] = row["url"]
 
-    with open("./../data/v1/links.json", "w") as p:
+    with open(f"data/{version}/links.json", "w") as p:
         json.dump(urls_and_ids, p)
 
 
@@ -29,7 +29,7 @@ def transform_to_plain():
 
         return "\n".join(text_list)  # Combine all extracted text
 
-    DB_NAME = "scraped_data.db"
+    DB_NAME = "data/scraped_data.db"
 
     # Table names
     SOURCE_TABLE = "webpages"
@@ -72,7 +72,3 @@ def transform_to_plain():
 
     # Close connection
     conn.close()
-
-
-if __name__ == "__main__":
-    transform_to_plain()

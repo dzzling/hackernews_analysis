@@ -1,14 +1,12 @@
 import requests
 import sqlite3
 import json
+import time
 from bs4 import BeautifulSoup
-
-# List of URLs to scrape
-with open("./../data/v1/links.json", "r") as f:
-    URLS = json.load(f)
+from tools import save_links, transform_to_plain
 
 # Database setup
-DB_NAME = "scraped_data.db"
+DB_NAME = "data/scraped_data.db"
 TABLE_NAME = "webpages"
 
 
@@ -55,8 +53,15 @@ def scrape_and_store(cursor, id, url):
 
 
 def main():
-    """Main execution function."""
+    version = "v4"
+
+    save_links(version)
+    time.sleep(5)  # Wait for the links to be saved
     create_database()
+
+    # List of URLs to scrape
+    with open(f"data/{version}/links.json", "r") as f:
+        URLS = json.load(f)
 
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -68,6 +73,8 @@ def main():
         conn.commit()
 
     conn.close()
+
+    transform_to_plain()
 
 
 if __name__ == "__main__":

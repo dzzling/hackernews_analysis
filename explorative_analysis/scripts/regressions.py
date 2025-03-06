@@ -21,6 +21,8 @@ print(X.shape)
 y = df["score"].to_numpy()
 print(y.shape)
 
+# %% Simple Linear regression
+
 clf = linear_model.LinearRegression()
 clf.fit(X, y)
 score = clf.score(X, y)
