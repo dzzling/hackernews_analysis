@@ -5,12 +5,13 @@ from transformers import pipeline
 from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 import re
-from nltk.corpus import stopwords
+from nltk.corpus import stopwords, words
 from nltk.tokenize import word_tokenize
 from gensim import corpora, models
 import nltk
 
 nltk.download("punkt_tab")
+nltk.download("words")
 
 # %%
 # Database setup
@@ -27,7 +28,7 @@ conn.close()
 
 # %% Text preprocessing
 docs = [row[1] for row in rows]
-
+""" 
 docs = [doc for doc in docs if doc != ""]
 docs = [doc.replace("\n", " ") for doc in docs]
 docs = [doc.lower() for doc in docs]
@@ -38,14 +39,34 @@ docs = [re.sub(r"[^a-z0-9 ]", "", doc) for doc in docs]
 stop_words = set(stopwords.words("english"))
 docs = [
     " ".join([word for word in doc.split() if word not in stop_words]) for doc in docs
-]
+] """
 
+
+def clean_text(text):
+    # Remove non-alphabetic characters
+    text = re.sub(r"[^a-zA-Z\s]", "", text)
+    # Tokenize and filter non-English words
+    tokens = text.lower().split()
+    tokens = [
+        word for word in tokens if word in english_words and word not in stop_words
+    ]
+    return " ".join(tokens)
+
+
+english_words = set(words.words())
+stop_words = set(stopwords.words("english"))
+
+docs = [row[1] for row in rows]
+
+docs = [doc for doc in docs if doc != ""]
+docs = [doc.replace("\n", " ") for doc in docs]
+docs = [clean_text(doc) for doc in docs]
 # %% BERTopic
 
 topic_model = BERTopic(
     embedding_model="all-MiniLM-L6-v2",
     representation_model=KeyBERTInspired(),
-    min_topic_size=5,
+    min_topic_size=10,
     top_n_words=5,
 )
 topics, probs = topic_model.fit_transform(docs)
