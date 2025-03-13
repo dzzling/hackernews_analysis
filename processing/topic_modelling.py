@@ -1,15 +1,14 @@
 # %% Dependencies
 
 import sqlite3
-from transformers import pipeline
 from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 import re
 from nltk.corpus import stopwords, words
-from nltk.tokenize import word_tokenize
-from gensim import corpora, models
 import polars as pl
 from hdbscan import HDBSCAN
+from sklearn.cluster import KMeans
+import sqlalchemy
 
 # %%
 # Database setup
@@ -22,10 +21,10 @@ cursor = conn.cursor()
 
 cursor.execute(f"SELECT id, plain FROM {SOURCE_TABLE}")
 rows = cursor.fetchall()
-conn.close()
 
 # %% Text preprocessing
 docs = [row[1] for row in rows]
+ids = [row[0] for row in rows]
 
 
 def clean_text(text):
@@ -43,42 +42,51 @@ english_words = set(words.words())
 english_words = {x for x in english_words if len(x) > 1}
 stop_words = set(stopwords.words("english"))
 
-docs = [doc for doc in docs if doc != ""]
-docs = [doc.replace("\n", " ") for doc in docs]
-docs = [clean_text(doc) for doc in docs]
-docs = [doc for doc in docs if doc != ""]
+clean_pairs = [(id, doc.replace("\n", " ")) for (id, doc) in zip(ids, docs)]
+clean_pairs = [(id, clean_text(doc)) for (id, doc) in clean_pairs]
+clean_pairs = [(id, doc) for (id, doc) in clean_pairs if doc != ""]
+docs = [doc for (id, doc) in clean_pairs]
+ids = [id for (id, doc) in clean_pairs]
+
+DEST_TABLE = "reduced_webpages"
+reduced_df = pl.DataFrame({"Id": ids, "Document": docs})
+reduced_df.write_database(
+    table_name=DEST_TABLE,
+    connection="sqlite:///./../data/scraped_data.db",
+    if_table_exists="replace",
+    engine="sqlalchemy",
+)
+
 # %% BERTopic
 
 hdbscan_model = HDBSCAN(
-    cluster_selection_epsilon=0.4, metric="euclidean", prediction_data=True
+    cluster_selection_epsilon=0.3,
+    min_cluster_size=10,
+    metric="euclidean",
+    prediction_data=True,
 )
+
+kmeans_model = KMeans(n_clusters=10)
 
 topic_model = BERTopic(
-    embedding_model="all-MiniLM-L6-v2",
     representation_model=KeyBERTInspired(),
-    top_n_words=10,
-    hdbscan_model=hdbscan_model,
+    hdbscan_model=kmeans_model,
 )
 topics, probs = topic_model.fit_transform(docs)
-topics_df = pl.DataFrame({"topic": topics, "document": docs})
-
-topic_model.get_topic_info()
-
 # %%
+# Create a dataframe with document-topic pairs
 
-# LDA
-tokenized_docs = [word_tokenize(doc) for doc in docs]
-dictionary = corpora.Dictionary(tokenized_docs)
-corpus = [dictionary.doc2bow(doc) for doc in tokenized_docs]
-
+topic_df = pl.from_pandas(topic_model.get_topic_info())
+doc_topics_df = pl.DataFrame({"Topic": topics, "Document": docs, "Id": ids})
+doc_topics_df = doc_topics_df.join(other=topic_df, on="Topic", how="inner")
+doc_topics_df = doc_topics_df.drop("Count", "Representation", "Representative_Docs")
 # %%
-num_topics = 6  # Number of topics to extract
-lda_model = models.LdaModel(
-    corpus, num_topics=num_topics, id2word=dictionary, passes=15
+DEST_TABLE = "topic_webpages"
+doc_topics_df.write_database(
+    table_name=DEST_TABLE,
+    connection="sqlite:///./../data/scraped_data.db",
+    if_table_exists="replace",
+    engine="sqlalchemy",
 )
-
-print("Topics:")
-for idx, topic in lda_model.print_topics(-1):
-    print(f"Topic {idx}: {topic}")
 
 # %%
