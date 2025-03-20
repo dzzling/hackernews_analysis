@@ -7,7 +7,7 @@ alt.data_transformers.enable("vegafusion")
 
 # %% Read into dataframe
 
-df = pl.read_csv("./../../data/v1/data.csv", ignore_errors=True)
+df = pl.read_csv("../data/v6/240min_data.csv", ignore_errors=True)
 
 print(f"Number of samples: {df.shape[0]}")
 
@@ -186,6 +186,7 @@ fig
 
 # %% Mean scores and mean post count by user
 
+
 ## Get mean score by user, take first state of post count
 binned = df.group_by("by").agg(
     pl.col("score").mean().alias("mean_score"),
@@ -233,3 +234,155 @@ fig = (
     )
 )
 fig
+
+# %% 1.Politicians Match words in title (simple topic modeling)
+df = df.with_columns(
+    pl.col("title")
+    .str.contains("(?i)trump|selensky|milei|trudeau(?-i)")
+    .alias("contains_politician")
+)
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_politician").is_not_null()),
+        title="Contains politician",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_politician:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 2. Programming Languages Match words in title (simple topic modeling)
+
+df = df.with_columns(
+    pl.col("title")
+    .str.contains(
+        "(?i)javascript|typescript|rust|kotlin|java|swift|python|go|scala|lisp|ruby|lua|elm(?-i)"
+    )
+    .alias("contains_programming_language")
+)
+# Pointplot
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_programming_language").is_not_null()),
+        title="Contains programming language",
+    )
+    .mark_point()
+    .encode(
+        y="contains_programming_language:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+# Boxplot
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_programming_language").is_not_null()),
+        title="Contains programming language",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_programming_language:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 3. Elon Musk Match words in title (simple topic modeling)
+
+df = df.with_columns(
+    pl.col("title").str.contains("(?i)elon|musk(?-i)").alias("contains_musk")
+)
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_musk").is_not_null()),
+        title="Contains musk",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_musk:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 4. Brands/Companies Match words in title (simple topic modeling)
+
+df = df.with_columns(
+    pl.col("title")
+    .str.contains(
+        "(?i)apple|google|microsoft|tesla|nvidia|netflix|ibm|facebook|twitter|amazon|oracle|intel|salesforce|slack|paypal|airbnb(?-i)"
+    )
+    .alias("contains_brand")
+)
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_brand").is_not_null()),
+        title="Contains brand",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_brand:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 5. Accelartors/VCs Match words in title (simple topic modeling)
+
+df = df.with_columns(
+    pl.col("title")
+    .str.contains(
+        "(?i)seqouia|tiger global|softbank|andreessen horowitz|index ventures|khosla ventures|accel|kleiner perkins|general catalyst(?-i)"
+    )
+    .alias("contains_vc")
+)
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_vc").is_not_null()),
+        title="Contains vc",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_vc:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 6.Occurance summary for simple topic modeling
+
+# Count occurrences for each column
+musk_counts = df.get_column("contains_musk").value_counts()
+programming_language_counts = df.get_column(
+    "contains_programming_language"
+).value_counts()
+politician_counts = df.get_column("contains_politician").value_counts()
+brand_counts = df.get_column("contains_brand").value_counts()
+vc_counts = df.get_column("contains_vc").value_counts()
+
+# Print the counts
+print("Counts for 'contains_musk':")
+print(musk_counts)
+
+print("\nCounts for 'contains_programming_language':")
+print(programming_language_counts)
+
+print("\nCounts for 'contains_politician':")
+print(politician_counts)
+
+print("\nCounts for 'contains_brand':")
+print(brand_counts)
+
+print("\nCounts for 'contains_vc':")
+print(vc_counts)
+
+# %%
+
+# TODO Check words do not match part of words for simple topic modeling

@@ -80,3 +80,36 @@ hourly_median_fp_df = (
 
 df1 = df1.join(hourly_median_fp_df, on="scraped_at_hour", how="left")
 # %%
+# Infer times url has been posted before in the last 12h
+df1 = df1.with_columns(
+    pl.Series(
+        "count_last_12h",
+        [
+            df1.filter(
+                (pl.col("url") == row["url"])
+                & (pl.col("time") < row["time"])
+                & (pl.col("time") >= (row["time"] - (12 * 3600)))
+            ).height
+            for row in df1.iter_rows(named=True)
+        ],
+    )
+)
+
+# %%
+# Infer times url has been posted before in the last 48h
+df1 = df1.with_columns(
+    pl.Series(
+        "count_last_48h",
+        [
+            df1.filter(
+                (pl.col("url") == row["url"])
+                & (pl.col("time") < row["time"])
+                & (pl.col("time") >= (row["time"] - (48 * 3600)))
+            ).height
+            for row in df1.iter_rows(named=True)
+        ],
+    )
+)
+
+
+# %%
