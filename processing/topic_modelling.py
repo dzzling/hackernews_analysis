@@ -57,6 +57,8 @@ reduced_df.write_database(
     engine="sqlalchemy",
 )
 
+# TODO Add article titel to each document
+
 # %% BERTopic
 
 hdbscan_model = HDBSCAN(
