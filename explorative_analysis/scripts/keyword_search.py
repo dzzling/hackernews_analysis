@@ -79,11 +79,15 @@ with open("./../../data/others/_yc_companies.json") as f:
 
 df = analyse_feature(df, companies, "yc_companies")
 
-# %% Open source repositories
-## TODO: Clean up repo list
+# %% Open source repositories : Not working - not enough hits and too many repos named like regular english words
 with open("./../../data/others/repos.json") as f:
     repos = json.load(f)
 
 df = analyse_feature(df, repos, "repos")
 
+# %% Politicians
+with open("./../../data/others/politicians.json") as f:
+    politicians = json.load(f)
+
+df = analyse_feature(df, politicians, "politicians")
 # %%
