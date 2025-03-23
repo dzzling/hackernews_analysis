@@ -26,6 +26,14 @@ rows = cursor.fetchall()
 docs = [row[1] for row in rows]
 ids = [row[0] for row in rows]
 
+docs_ids_df = pl.DataFrame({"id": ids, "doc": docs})
+df_with_titles = pl.read_csv("./../data/v4/30min_data.csv")
+data = docs_ids_df.join(df_with_titles, on="id", how="inner")
+
+docs = data["doc"].to_list()
+ids = data["id"].to_list()
+titles = data["title"].to_list()
+
 
 def clean_text(text):
     # Remove non-alphabetic characters
@@ -42,11 +50,15 @@ english_words = set(words.words())
 english_words = {x for x in english_words if len(x) > 1}
 stop_words = set(stopwords.words("english"))
 
-clean_pairs = [(id, doc.replace("\n", " ")) for (id, doc) in zip(ids, docs)]
-clean_pairs = [(id, clean_text(doc)) for (id, doc) in clean_pairs]
-clean_pairs = [(id, doc) for (id, doc) in clean_pairs if doc != ""]
-docs = [doc for (id, doc) in clean_pairs]
-ids = [id for (id, doc) in clean_pairs]
+clean_pairs = [
+    (id, doc.replace("\n", " "), title) for (id, doc, title) in zip(ids, docs, titles)
+]
+clean_pairs = [(id, clean_text(doc), title) for (id, doc, title) in clean_pairs]
+clean_pairs = [(id, doc, title) for (id, doc, title) in clean_pairs if doc != ""]
+
+# Combine doc and title
+docs = [title + " " + doc for (_, doc, title) in clean_pairs]
+ids = [id for (id, _, _) in clean_pairs]
 
 DEST_TABLE = "reduced_webpages"
 reduced_df = pl.DataFrame({"Id": ids, "Document": docs})
@@ -57,7 +69,6 @@ reduced_df.write_database(
     engine="sqlalchemy",
 )
 
-# TODO Add article titel to each document
 
 # %% BERTopic
 
