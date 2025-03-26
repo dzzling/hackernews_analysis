@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from tools import save_links, transform_to_plain
 
 # Database setup
-DB_NAME = "data/scraped_data.db"
+DB_NAME = "data/v7/scraped_data.db"
 TABLE_NAME = "webpages"
 
 
@@ -53,7 +53,7 @@ def scrape_and_store(cursor, id, url):
 
 
 def main():
-    version = "v4"
+    version = "v7"
 
     save_links(version)
     time.sleep(5)  # Wait for the links to be saved
@@ -74,7 +74,7 @@ def main():
 
     conn.close()
 
-    transform_to_plain()
+    transform_to_plain(DB_NAME, TABLE_NAME, "plain_webpages")
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ selection = df[
     "contains_yc_companies",
     "contains_repos",
     "contains_politicians",
+    "topic",
 ].drop_nulls()
 y = selection["score"].to_numpy()
 print(y.shape)

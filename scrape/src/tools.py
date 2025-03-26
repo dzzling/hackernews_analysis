@@ -16,7 +16,7 @@ def save_links(version):
         json.dump(urls_and_ids, p)
 
 
-def transform_to_plain():
+def transform_to_plain(DB_NAME, SOURCE_TABLE, DEST_TABLE):
 
     def extract_relevant_text(html):
         soup = BeautifulSoup(html, "html.parser")
@@ -28,12 +28,6 @@ def transform_to_plain():
         ]
 
         return "\n".join(text_list)  # Combine all extracted text
-
-    DB_NAME = "data/scraped_data.db"
-
-    # Table names
-    SOURCE_TABLE = "webpages"
-    DEST_TABLE = "plain_webpages"
 
     # Connect to SQLite
     conn = sqlite3.connect(DB_NAME)

@@ -12,7 +12,7 @@ import sqlalchemy
 
 # %%
 # Database setup
-DB_NAME = "./../data/scraped_data.db"
+DB_NAME = "./../data/v7/scraped_data.db"
 SOURCE_TABLE = "plain_webpages"
 
 # Connect to SQLite
@@ -27,7 +27,7 @@ docs = [row[1] for row in rows]
 ids = [row[0] for row in rows]
 
 docs_ids_df = pl.DataFrame({"id": ids, "doc": docs})
-df_with_titles = pl.read_csv("./../data/v4/30min_data.csv")
+df_with_titles = pl.read_csv("./../data/v7/30min_data.csv")
 data = docs_ids_df.join(df_with_titles, on="id", how="inner")
 
 docs = data["doc"].to_list()
@@ -64,7 +64,7 @@ DEST_TABLE = "reduced_webpages"
 reduced_df = pl.DataFrame({"Id": ids, "Document": docs})
 reduced_df.write_database(
     table_name=DEST_TABLE,
-    connection="sqlite:///./../data/scraped_data.db",
+    connection="sqlite:///./../data/v7/scraped_data.db",
     if_table_exists="replace",
     engine="sqlalchemy",
 )
@@ -97,7 +97,7 @@ doc_topics_df = doc_topics_df.drop("Count", "Representation", "Representative_Do
 DEST_TABLE = "topic_webpages"
 doc_topics_df.write_database(
     table_name=DEST_TABLE,
-    connection="sqlite:///./../data/scraped_data.db",
+    connection="sqlite:///./../data/v7/scraped_data.db",
     if_table_exists="replace",
     engine="sqlalchemy",
 )

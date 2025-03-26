@@ -7,7 +7,7 @@ alt.data_transformers.enable("vegafusion")
 
 # %% Read into dataframe
 
-df = pl.read_csv("./../../data/v6/240min_data.csv", ignore_errors=True)
+df = pl.read_csv("./../data/v7/240min_data.csv", ignore_errors=True)
 
 print(f"Number of samples: {df.shape[0]}")
 

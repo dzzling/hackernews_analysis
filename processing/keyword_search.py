@@ -2,6 +2,7 @@
 import polars as pl
 import altair as alt
 import json
+from collections import Counter
 
 
 def infer_features(df):
@@ -43,10 +44,12 @@ def infer_features(df):
                 feature_detail.append(None)
                 contains_feature.append(0)
 
+        print(Counter(contains_feature))
+
         df = df.with_columns(pl.Series(f"{feature}_detail", feature_detail))
         df = df.with_columns(pl.Series(f"contains_{feature}", contains_feature))
 
-        """ fig = (
+        fig = (
             alt.Chart(
                 df.filter(pl.col(f"contains_{feature}").is_not_null()),
                 title="Contains " + feature,
@@ -59,7 +62,7 @@ def infer_features(df):
                 ),
             )
         )
-        fig.display() """
+        fig.display()
 
         return df
 

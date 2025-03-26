@@ -3,6 +3,7 @@
 
 import polars as pl
 from keyword_search import infer_features
+import sqlite3
 
 # %%
 # Read into dataframe
@@ -115,5 +116,23 @@ df1 = df1.with_columns(
 
 # %%
 df1 = infer_features(df1)
+
+# %%
+
+conn = sqlite3.connect("../data/v7/scraped_data.db")
+cursor = conn.cursor()
+cursor.execute("SELECT id, topic FROM topic_webpages")
+rows = cursor.fetchall()
+conn.close()
+
+ids = [row[0] for row in rows]
+topics = [row[1] for row in rows]
+topics_df = pl.DataFrame({"id": ids, "topic": topics})
+
+df1 = df1.join(topics_df, on="id", how="inner")
+
+
 # %%
 df1.write_csv("../data/regression/data.csv")
+
+# %%
