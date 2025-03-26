@@ -5,21 +5,41 @@ from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.inspection import permutation_importance
+from sklearn.preprocessing import StandardScaler
 import shap
 
 alt.data_transformers.enable("vegafusion")
 
-# TODO: Scaling?
-
 # %% Read into dataframe
 
-df = pl.read_csv("./../../data/v1/data.csv", ignore_errors=True)
+df = pl.read_csv("./../data/regression/data.csv", ignore_errors=True)
 
-features = df["descendants", "user_karma", "user_post_count"]
-X = features.fill_null(0).fill_nan(0).to_numpy()
-print(X.shape)
-y = df["score"].to_numpy()
+selection = df[
+    "score",
+    "user_karma",
+    "user_post_count",
+    "weekday",
+    "hour",
+    "title_length",
+    "body_length",
+    "time_on_first_page",
+    "average_score_of_posts_before",
+    "hourly_median_fp_score",
+    "count_last_12h",
+    "count_last_48h",
+    "contains_brands",
+    "contains_yc_companies",
+    "contains_repos",
+    "contains_politicians",
+].drop_nulls()
+y = selection["score"].to_numpy()
 print(y.shape)
+selection = selection.drop("score")
+X = selection.drop_nulls().to_numpy()
+print(X.shape)
+
+y = StandardScaler().fit_transform(y.reshape(-1, 1)).flatten()
+X = StandardScaler().fit_transform(X)
 
 # %% Simple Linear regression
 
@@ -66,7 +86,7 @@ print(rf_default_score) """
 
 importances = rf.feature_importances_
 print("Model feature importances:")
-print(features.columns)
+print(selection.columns)
 print(importances)
 
 ## Permutation importance

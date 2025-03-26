@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:525c5ae5e67a9bcfe60cda6d5f988a9208a5d638ad45f7135de98eef0eb4dffe"
+content_hash = "sha256:575c7ef0f456c3c05f67a2d63cc622ce53efd1601cb7d448c3ea927c605c1817"
 
 [[metadata.targets]]
 requires_python = "==3.12.*"
@@ -206,6 +206,17 @@ dependencies = [
 files = [
     {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
     {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
+]
+
+[[package]]
+name = "cloudpickle"
+version = "3.1.1"
+requires_python = ">=3.8"
+summary = "Pickler class to extend the standard pickle.Pickler functionality"
+groups = ["default"]
+files = [
+    {file = "cloudpickle-3.1.1-py3-none-any.whl", hash = "sha256:c8c5a44295039331ee9dad40ba100a9c7297b6f988e50e87ccdf3765a668350e"},
+    {file = "cloudpickle-3.1.1.tar.gz", hash = "sha256:b216fa8ae4019d5482a8ac3c95d8f6346115d8835911fd4aefd1a445e4242c64"},
 ]
 
 [[package]]
@@ -1472,6 +1483,34 @@ files = [
 ]
 
 [[package]]
+name = "shap"
+version = "0.47.1"
+requires_python = ">=3.9"
+summary = "A unified approach to explain the output of any machine learning model."
+groups = ["default"]
+dependencies = [
+    "cloudpickle",
+    "numba>=0.54",
+    "numpy",
+    "packaging>20.9",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+    "slicer==0.0.8",
+    "tqdm>=4.27.0",
+    "typing-extensions",
+]
+files = [
+    {file = "shap-0.47.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:961fd025aa5d53b6df947ab0e2d6b1f98d206bac36ed65c4c51f74921b7dadbc"},
+    {file = "shap-0.47.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:0f876a4eb06666555f5b83edca3c900ca7c3a8d5ebf2deef330b41a62f7dda7f"},
+    {file = "shap-0.47.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3f67da47d287dcd861dd664d92d595c8a0d5c89cba895e37c21b76ca905edc72"},
+    {file = "shap-0.47.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c0a36cdc8c681901491714d9cea9f98af4c2da6328394382195386f99d520b5e"},
+    {file = "shap-0.47.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:55709c08d163b74e9de4b201e8fe37362270914cef43e89c75d58728f1c5f0b6"},
+    {file = "shap-0.47.1-cp312-cp312-win_amd64.whl", hash = "sha256:4dd5a497dba744e1190fbc1631603f5d8441eabde0bf882b9e6aefb9f083812d"},
+    {file = "shap-0.47.1.tar.gz", hash = "sha256:292dc548c53fb0438fddacea793eb3482936621ad50a65529630684155625dce"},
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
@@ -1480,6 +1519,17 @@ groups = ["default"]
 files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
     {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
+]
+
+[[package]]
+name = "slicer"
+version = "0.0.8"
+requires_python = ">=3.6"
+summary = "A small package for big slicing."
+groups = ["default"]
+files = [
+    {file = "slicer-0.0.8-py3-none-any.whl", hash = "sha256:6c206258543aecd010d497dc2eca9d2805860a0b3758673903456b7df7934dc3"},
+    {file = "slicer-0.0.8.tar.gz", hash = "sha256:2e7553af73f0c0c2d355f4afcc3ecf97c6f2156fcf4593955c3f56cf6c4d6eb7"},
 ]
 
 [[package]]

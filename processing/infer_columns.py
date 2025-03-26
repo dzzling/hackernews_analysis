@@ -2,14 +2,15 @@
 # Dependencies
 
 import polars as pl
+from keyword_search import infer_features
 
 # %%
 # Read into dataframe
 
-df1 = pl.read_csv("../data/v6/30min_data.csv", ignore_errors=True)
-df2 = pl.read_csv("../data/v6/240min_data.csv", ignore_errors=True)
-df3 = pl.read_csv("../data/v6/front_page_data.csv", ignore_errors=True)
-df4 = pl.read_csv("../data/v6/second_chance_data.csv", ignore_errors=True)
+df1 = pl.read_csv("../data/v7/30min_data.csv", ignore_errors=True)
+df2 = pl.read_csv("../data/v7/240min_data.csv", ignore_errors=True)
+df3 = pl.read_csv("../data/v7/front_page_data.csv", ignore_errors=True)
+df4 = pl.read_csv("../data/v7/second_chance_data.csv", ignore_errors=True)
 
 df1 = df1.join(df2, on="id", how="inner")
 
@@ -36,6 +37,7 @@ df1 = df1.with_columns(pl.col("title").str.len_chars().alias("title_length"))
 # %%
 # Infer body length
 df1 = df1.with_columns(pl.col("text").str.len_chars().alias("body_length"))
+df1 = df1.with_columns(pl.col("body_length").fill_null(0))
 
 # %%
 # Infer time on newest first page (30 articles are always on first page)
@@ -75,7 +77,7 @@ df1 = df1.with_columns(
 hourly_median_fp_df = (
     df3["score", "scraped_at_hour"]
     .group_by("scraped_at_hour")
-    .agg(pl.col("score").median().alias("hourly_median_score"))
+    .agg(pl.col("score").median().alias("hourly_median_fp_score"))
 )
 
 df1 = df1.join(hourly_median_fp_df, on="scraped_at_hour", how="left")
@@ -111,5 +113,7 @@ df1 = df1.with_columns(
     )
 )
 
-
 # %%
+df1 = infer_features(df1)
+# %%
+df1.write_csv("../data/regression/data.csv")
