@@ -28,15 +28,21 @@ ids = [row[0] for row in rows]
 
 docs_ids_df = pl.DataFrame({"id": ids, "doc": docs})
 df_with_titles = pl.read_csv("./../data/v7/30min_data.csv")
-data = docs_ids_df.join(df_with_titles, on="id", how="inner")
+data = docs_ids_df.join(df_with_titles, on="id", how="right")
+data = data.filter(data["title"].is_not_null())
 
 docs = data["doc"].to_list()
 ids = data["id"].to_list()
 titles = data["title"].to_list()
+text = data["text"].to_list()
 
 
 def clean_text(text):
+    if text is None:
+        return " "
+
     # Remove non-alphabetic characters
+    text = text.replace("\n", " ")
     text = re.sub(r"[^a-zA-Z\s]", "", text)
     # Tokenize and filter non-English words
     tokens = text.lower().split()
@@ -50,18 +56,24 @@ english_words = set(words.words())
 english_words = {x for x in english_words if len(x) > 1}
 stop_words = set(stopwords.words("english"))
 
+# Clean text
 clean_pairs = [
-    (id, doc.replace("\n", " "), title) for (id, doc, title) in zip(ids, docs, titles)
+    (id, clean_text(doc), clean_text(text), title)
+    for (id, doc, text, title) in zip(ids, docs, text, titles)
 ]
-clean_pairs = [(id, clean_text(doc), title) for (id, doc, title) in clean_pairs]
-clean_pairs = [(id, doc, title) for (id, doc, title) in clean_pairs if doc != ""]
+length = [
+    3 if len(doc) > 200 else 2 if len(doc) > 50 else 1
+    for (_, doc, text, title) in clean_pairs
+]
 
 # Combine doc and title
-docs = [title + " " + doc for (_, doc, title) in clean_pairs]
-ids = [id for (id, _, _) in clean_pairs]
+docs = [title + " " + text + " " + doc for (_, doc, text, title) in clean_pairs]
+ids = [id for (id, _, _, _) in clean_pairs]
+
+# %%
 
 DEST_TABLE = "reduced_webpages"
-reduced_df = pl.DataFrame({"Id": ids, "Document": docs})
+reduced_df = pl.DataFrame({"Id": ids, "Document": docs, "Length": length})
 reduced_df.write_database(
     table_name=DEST_TABLE,
     connection="sqlite:///./../data/v7/scraped_data.db",
@@ -90,7 +102,9 @@ topics, probs = topic_model.fit_transform(docs)
 # Create a dataframe with document-topic pairs
 
 topic_df = pl.from_pandas(topic_model.get_topic_info())
-doc_topics_df = pl.DataFrame({"Topic": topics, "Document": docs, "Id": ids})
+doc_topics_df = pl.DataFrame(
+    {"Topic": topics, "Document": docs, "Id": ids, "Length": length}
+)
 doc_topics_df = doc_topics_df.join(other=topic_df, on="Topic", how="inner")
 doc_topics_df = doc_topics_df.drop("Count", "Representation", "Representative_Docs")
 # %%

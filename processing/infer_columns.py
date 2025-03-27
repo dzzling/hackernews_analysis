@@ -2,7 +2,7 @@
 # Dependencies
 
 import polars as pl
-from keyword_search import analyse_title, infer_features
+from keyword_search import analyse_title, infer_keywords
 import sqlite3
 from nltk.corpus import stopwords
 from collections import Counter
@@ -14,6 +14,7 @@ df1 = pl.read_csv("../data/v7/30min_data.csv", ignore_errors=True)
 df2 = pl.read_csv("../data/v7/240min_data.csv", ignore_errors=True)
 df3 = pl.read_csv("../data/v7/front_page_data.csv", ignore_errors=True)
 df4 = pl.read_csv("../data/v7/second_chance_data.csv", ignore_errors=True)
+# %%
 
 df1 = df1.join(df2, on="id", how="inner")
 
@@ -117,19 +118,19 @@ df1 = df1.with_columns(
 )
 
 # %%
-df1 = infer_features(df1)
+df1 = infer_keywords(df1)
 
-# %% Get topic
+# %% Get topic and document length
 
 conn = sqlite3.connect("../data/v7/scraped_data.db")
 cursor = conn.cursor()
-cursor.execute("SELECT id, topic, document FROM topic_webpages")
+cursor.execute("SELECT id, topic, length FROM topic_webpages")
 rows = cursor.fetchall()
 conn.close()
 
 ids = [row[0] for row in rows]
 topics = [row[1] for row in rows]
-document_lengths = [len(row[2]) for row in rows]
+document_lengths = [row[2] for row in rows]
 
 topics_df = pl.DataFrame(
     {"id": ids, "topic": topics, "document_length": document_lengths}

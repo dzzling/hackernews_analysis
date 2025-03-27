@@ -2,10 +2,17 @@ import csv
 import json
 import sqlite3
 from bs4 import BeautifulSoup
+import polars as pl
 
 
 def save_links(version):
     urls_and_ids = {}
+
+    # TODO: Some of the data is missing, so we need to join the dataframes and check if the url is in the other
+    """ df_30min = pl.read_csv(f"data/{version}/30min_data.csv")
+    df_240min = pl.read_csv(f"data/{version}/240min_data.csv")
+
+    df = df_30min.join(df_240min, on="id", how="outer") """
 
     with open(f"data/{version}/30min_data.csv", "r") as f:
         reader = csv.DictReader(f)

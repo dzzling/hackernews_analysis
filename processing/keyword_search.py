@@ -121,7 +121,7 @@ def analyse_url(df, feature_list, feature_name):
 
 
 # %%
-def infer_features(df):
+def infer_keywords(df):
     # %% Brand search with more detail
     brands = pl.read_csv("./../data/others/brands.csv", ignore_errors=True)
     brands = brands["Name"].str.to_lowercase().to_list()
