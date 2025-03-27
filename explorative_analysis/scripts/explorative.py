@@ -2,12 +2,14 @@
 # Dependencies
 import polars as pl
 import altair as alt
+from nltk.corpus import stopwords
+from collections import Counter
 
 alt.data_transformers.enable("vegafusion")
 
 # %% Read into dataframe
 
-df = pl.read_csv("./../data/v7/240min_data.csv", ignore_errors=True)
+df = pl.read_csv("./../../data/v7/240min_data.csv", ignore_errors=True)
 
 print(f"Number of samples: {df.shape[0]}")
 
@@ -383,6 +385,105 @@ print(brand_counts)
 print("\nCounts for 'contains_vc':")
 print(vc_counts)
 
-# %%
+# %% 7. url contains classical news
 
-# TODO Check words do not match part of words for simple topic modeling
+df = df.with_columns(
+    pl.col("url")
+    .str.contains(
+        "(?i)cnn|bbc|newyorker|guardian|theatlantic|nbcnews|nytimes|reuters|cbsnews|washingtonpost|politico|huffpost|abcnews(?-i)"
+    )
+    .alias("contains_classical_news")
+)
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_classical_news").is_not_null()),
+        title="contains_classical_news",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_classical_news:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 8. url contains tech/startup news
+
+df = df.with_columns(
+    pl.col("url")
+    .str.contains(
+        "(?i)vice|verge|businessinsider|arstechnica|wired|forbes|techcrunch(?-i)"
+    )
+    .alias("contains_startupy_news")
+)
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_startupy_news").is_not_null()),
+        title="contains_startupy_news",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_startupy_news:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 9. url is blog
+
+df = df.with_columns(
+    pl.col("url")
+    .str.contains("(?i)medium|substack|blogspot|wordpress(?-i)")
+    .alias("contains_blogname")
+)
+## Info: Wordpress performs best, medium the worst
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_blogname").is_not_null()),
+        title="contains_blogname",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_blogname:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 10. url is academic
+
+df = df.with_columns(
+    pl.col("url")
+    .str.contains("(?i)arxiv|pdf|stanford|columbia|mit.edu|yale|harvard(?-i)")
+    .alias("contains_academic")
+)
+## Info: Wordpress performs best, medium the worst
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_academic").is_not_null()),
+        title="contains_academic",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_academic:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% Most common words in titles on frontpage
+fp_df = pl.read_csv("./../../data/v7/front_page_data.csv", ignore_errors=True)
+
+stop_words = set(stopwords.words("english"))
+titles = fp_df["title"].to_list()
+title_words = " ".join(titles)
+title_words = title_words.lower()
+title_words = title_words.split()
+title_words = [word for word in title_words if word not in stop_words]
+print(Counter(title_words))
+
+# %%

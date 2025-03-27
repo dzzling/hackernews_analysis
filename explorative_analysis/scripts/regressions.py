@@ -3,6 +3,7 @@ import polars as pl
 import altair as alt
 from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import StandardScaler
@@ -12,7 +13,7 @@ alt.data_transformers.enable("vegafusion")
 
 # %% Read into dataframe
 
-df = pl.read_csv("./../data/regression/data.csv", ignore_errors=True)
+df = pl.read_csv("./../../data/regression/data.csv", ignore_errors=True)
 
 selection = df[
     "score",
@@ -31,7 +32,9 @@ selection = df[
     "contains_yc_companies",
     "contains_repos",
     "contains_politicians",
+    "contains_buzzwords",
     "topic",
+    "document_length",
 ].drop_nulls()
 y = selection["score"].to_numpy()
 print(y.shape)
@@ -39,8 +42,8 @@ selection = selection.drop("score")
 X = selection.drop_nulls().to_numpy()
 print(X.shape)
 
-y = StandardScaler().fit_transform(y.reshape(-1, 1)).flatten()
-X = StandardScaler().fit_transform(X)
+# y = StandardScaler().fit_transform(y.reshape(-1, 1)).flatten()
+# X = StandardScaler().fit_transform(X)
 
 # %% Simple Linear regression
 
@@ -58,30 +61,22 @@ print(intercept)
 # %% Random forest regression
 
 rf = RandomForestRegressor(
-    n_estimators=300,  # More trees for stability
-    max_depth=10,  # Limits complexity to avoid overfitting
-    min_samples_split=10,  # Prevents small noisy splits
-    min_samples_leaf=5,  # Ensures each leaf has enough data
+    n_estimators=800,  # More trees for stability
+    max_depth=None,  # Limits complexity to avoid overfitting
+    min_samples_split=5,  # Prevents small noisy splits
+    min_samples_leaf=8,  # Ensures each leaf has enough data
     max_features="sqrt",  # Balanced feature selection
     random_state=42,
+    bootstrap=True,
 )
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.33, random_state=42
+    X, y, test_size=0.25, random_state=42
 )
 rf.fit(X_train, y_train)
 
-# %% RF Evaluation
-
 score = rf.score(X_test, y_test)
 print(score)
-
-# %% RF Default
-""" rf_default = RandomForestRegressor(random_state=42)
-rf_default.fit(X_train, y_train)
-
-rf_default_score = rf_default.score(X_test, y_test)
-print(rf_default_score) """
 
 # %% Get RF feature importance
 
@@ -92,6 +87,7 @@ print(importances)
 
 ## Permutation importance
 
+print("Permutation importance:")
 result = permutation_importance(rf, X_test, y_test, n_repeats=10, random_state=42)
 perm_importances = result.importances_mean
 perm_std = result.importances_std

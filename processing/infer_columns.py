@@ -2,8 +2,10 @@
 # Dependencies
 
 import polars as pl
-from keyword_search import infer_features
+from keyword_search import analyse_title, infer_features
 import sqlite3
+from nltk.corpus import stopwords
+from collections import Counter
 
 # %%
 # Read into dataframe
@@ -117,19 +119,35 @@ df1 = df1.with_columns(
 # %%
 df1 = infer_features(df1)
 
-# %%
+# %% Get topic
 
 conn = sqlite3.connect("../data/v7/scraped_data.db")
 cursor = conn.cursor()
-cursor.execute("SELECT id, topic FROM topic_webpages")
+cursor.execute("SELECT id, topic, document FROM topic_webpages")
 rows = cursor.fetchall()
 conn.close()
 
 ids = [row[0] for row in rows]
 topics = [row[1] for row in rows]
-topics_df = pl.DataFrame({"id": ids, "topic": topics})
+document_lengths = [len(row[2]) for row in rows]
+
+topics_df = pl.DataFrame(
+    {"id": ids, "topic": topics, "document_length": document_lengths}
+)
 
 df1 = df1.join(topics_df, on="id", how="inner")
+
+# %% Infer count of buzzwords
+stop_words = set(stopwords.words("english"))
+titles = df3["title"].to_list()
+title_words = " ".join(titles)
+title_words = title_words.lower()
+title_words = title_words.split()
+title_words = [word for word in title_words if word not in stop_words]
+
+most_successfull_words = [words for words, _ in Counter(title_words).most_common(90)]
+
+df1 = analyse_title(df1, most_successfull_words, "buzzwords", True)
 
 
 # %%
