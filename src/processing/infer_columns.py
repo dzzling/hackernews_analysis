@@ -10,10 +10,10 @@ from collections import Counter
 # %%
 # Read into dataframe
 
-df1 = pl.read_csv("../data/v7/30min_data.csv", ignore_errors=True)
-df2 = pl.read_csv("../data/v7/240min_data.csv", ignore_errors=True)
-df3 = pl.read_csv("../data/v7/front_page_data.csv", ignore_errors=True)
-df4 = pl.read_csv("../data/v7/second_chance_data.csv", ignore_errors=True)
+df1 = pl.read_csv("../../data/v7/30min_data.csv", ignore_errors=True)
+df2 = pl.read_csv("../../data/v7/240min_data.csv", ignore_errors=True)
+df3 = pl.read_csv("../../data/v7/front_page_data.csv", ignore_errors=True)
+df4 = pl.read_csv("../../data/v7/second_chance_data.csv", ignore_errors=True)
 # %%
 
 df1 = df1.join(df2, on="id", how="inner")
@@ -122,7 +122,7 @@ df1 = infer_keywords(df1)
 
 # %% Get topic and document length
 
-conn = sqlite3.connect("../data/v7/scraped_data.db")
+conn = sqlite3.connect("../../data/v7/scraped_data.db")
 cursor = conn.cursor()
 cursor.execute("SELECT id, topic, length FROM topic_webpages")
 rows = cursor.fetchall()
@@ -152,6 +152,6 @@ df1 = analyse_title(df1, most_successfull_words, "buzzwords", True)
 
 
 # %%
-df1.write_csv("../data/regression/data.csv")
+df1.write_csv("../../data/regression/data.csv")
 
 # %%

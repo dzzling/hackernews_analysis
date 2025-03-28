@@ -123,50 +123,50 @@ def analyse_url(df, feature_list, feature_name):
 # %%
 def infer_keywords(df):
     # %% Brand search with more detail
-    brands = pl.read_csv("./../data/others/brands.csv", ignore_errors=True)
+    brands = pl.read_csv("./../../data/others/brands.csv", ignore_errors=True)
     brands = brands["Name"].str.to_lowercase().to_list()
 
     df = analyse_title(df, brands, "brands")
 
     # %% YC companies : Not working - not enough hits for yc companies
 
-    with open("./../data/others/_yc_companies.json") as f:
+    with open("./../../data/others/_yc_companies.json") as f:
         companies = json.load(f)
 
     df = analyse_title(df, companies, "yc_companies")
 
     # %% Open source repositories : Not working - not enough hits and too many repos named like regular english words
-    with open("./../data/others/repos.json") as f:
+    with open("./../../data/others/repos.json") as f:
         repos = json.load(f)
 
     df = analyse_title(df, repos, "repos")
 
     # %% Politicians
-    with open("./../data/others/politicians.json") as f:
+    with open("./../../data/others/politicians.json") as f:
         politicians = json.load(f)
 
     df = analyse_title(df, politicians, "politicians")
 
     # %% Classical news domain
-    with open("./../data/others/classical_news.json") as f:
+    with open("./../../data/others/classical_news.json") as f:
         classical_news = json.load(f)
 
     df = analyse_url(df, classical_news, "classical_news")
 
     # %% Startup news
-    with open("./../data/others/startup_news.json") as f:
+    with open("./../../data/others/startup_news.json") as f:
         startup_news = json.load(f)
 
     df = analyse_url(df, startup_news, "startup_news")
 
     # %% Blog
-    with open("./../data/others/blog.json") as f:
+    with open("./../../data/others/blog.json") as f:
         blogs = json.load(f)
 
     df = analyse_url(df, blogs, "blogs")
 
     # %% Academic
-    with open("./../data/others/academic.json") as f:
+    with open("./../../data/others/academic.json") as f:
         academic = json.load(f)
 
     df = analyse_url(df, academic, "academic")
