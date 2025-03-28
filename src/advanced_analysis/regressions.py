@@ -105,7 +105,7 @@ rf = RandomForestRegressor(
     bootstrap=True,
 )
 
-cross_val_score(rf, X_train, y_train, cv=5)
+cross_val_score(rf, X, y, cv=5)
 
 # %% Difference between mean and median of tree predictions
 rf.fit(X_train, y_train)

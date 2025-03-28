@@ -22,7 +22,9 @@ top_5_comments = df.fill_null(0).sort("descendants", descending=True).head(5)
 print(top_5_comments)
 # %% Score distribution
 fig = (
-    alt.Chart(df, title="Score distribution").mark_bar().encode(x="score", y="count()")
+    alt.Chart(df, title="Score distribution")
+    .mark_bar()
+    .encode(x=alt.X("score", scale=alt.Scale(type="log")), y="count()")
 )
 fig
 
