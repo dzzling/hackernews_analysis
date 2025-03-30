@@ -19,15 +19,24 @@ import numpy as np
 
 alt.data_transformers.enable("vegafusion")
 
-# TODO: Test model performance for classification
-
 # %% Read into dataframe
 
 df = pl.read_csv("./../../data/regression/data.csv", ignore_errors=True)
 
+# %%
+""" duplicates = df.clone()
+duplicates = duplicates.clear()
+
+for url in df["url"].unique():
+    dup = df.filter(pl.col("url") == url)
+    if dup.shape[0] > 1:
+        duplicates.vstack(dup, in_place=True) """
+
+# %%
+
 selection = (
     df[
-        "score",
+        "score_right",
         "user_karma",
         "user_post_count",
         "weekday",
@@ -50,19 +59,18 @@ selection = (
     .drop_nulls()
     .drop_nans()
 )
-
-""" ## Undersample low scores
-high_score = selection.filter(pl.col("score") > 2)
-low_score = selection.filter(pl.col("score") < 2)
+""" 
+## Undersample low scores
+high_score = selection.filter(pl.col("score_right") >= 10)
+low_score = selection.filter(pl.col("score_right") < 10)
 low_score_sampled = low_score.sample(n=len(high_score))
 
 selection = pl.concat([low_score_sampled, high_score])
  """
 
-# TODO: Perturb data set
-y = selection["score"].to_numpy()
+y = selection["score_right"].to_numpy()
 print(y.shape)
-selection = selection.drop("score")
+selection = selection.drop("score_right")
 X = selection.to_numpy()
 print(X.shape)
 
@@ -82,7 +90,7 @@ print(coef)
 intercept = clf.intercept_
 print(intercept)
 
-## Result: Still not good due to weak linearity between features
+## Result: Still not good (due to weak linearity between features?)
 
 # %% Simple decision tree regression
 regressor = DecisionTreeRegressor()
@@ -104,11 +112,41 @@ rf = RandomForestRegressor(
     random_state=42,
     bootstrap=True,
 )
+# %%
 
 cross_val_score(rf, X, y, cv=5)
 
+# %% Get decision rules of the most successfull tree in the forest
+
+# Get the predictions from each tree
+y_preds = np.zeros((len(X_test), rf.n_estimators))
+for i, tree in enumerate(rf.estimators_):
+    y_preds[:, i] = tree.predict(X_test)
+
+# Compute the Mean Squared Error for each tree
+errors = np.mean((y_preds - y_test[:, np.newaxis]) ** 2, axis=0)
+
+# Find the index of the tree closest to the mean error
+mean_error = np.mean(errors)
+closest_tree_idx = np.argmin(np.abs(errors - mean_error))
+
+# Get the most successful tree (closest to the mean)
+best_tree = rf.estimators_[closest_tree_idx]
+
+# Export the decision rules of the best tree
+tree_rules = export_text(
+    best_tree, feature_names=[f"{selection.columns[i]}" for i in range(X.shape[1])]
+)
+
+# Print the rules of the most successful tree
+print("Decision rules of the most successful tree:")
+print(tree_rules)
+
 # %% Difference between mean and median of tree predictions
 rf.fit(X_train, y_train)
+
+print("Ground truth:")
+print(y_test[0:10])
 
 dict = {x: [] for x in range(10)}
 for tree in range(800):
