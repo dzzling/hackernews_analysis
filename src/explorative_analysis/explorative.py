@@ -239,6 +239,12 @@ fig = (
 )
 fig
 
+# %% Prep titles
+
+df = df.sort(["title", "score"], descending=[False, False])
+# Remove duplicates, keeping the last one (highest score)
+df = df.unique(subset=["title"], keep="last", maintain_order=True)
+
 # %% 1.Politicians Match words in title (simple topic modeling)
 df = df.with_columns(
     pl.col("title")
@@ -387,6 +393,13 @@ print(brand_counts)
 print("\nCounts for 'contains_vc':")
 print(vc_counts)
 
+# %% Prep urls
+
+df = pl.read_csv("./../../data/v7/240min_data.csv", ignore_errors=True)
+
+df = df.sort(["url", "score"], descending=[False, False])
+# Remove duplicates, keeping the last one (highest score)
+df = df.unique(subset=["url"], keep="last", maintain_order=True)
 # %% 7. url contains classical news
 
 df = df.with_columns(
@@ -472,6 +485,29 @@ fig = (
     .mark_boxplot(extent="min-max")
     .encode(
         y="contains_academic:N",
+        x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+    )
+)
+fig
+
+# %% 11. url is tech company
+
+df = df.with_columns(
+    pl.col("url")
+    .str.contains(
+        "(?i)openai|microsoft|apple|nvidia|google|aphabet|tesla|anthropic|paypal|ibm|intel|amazon|uber|lyft|meta(?-i)"
+    )
+    .alias("contains_techcompany")
+)
+
+fig = (
+    alt.Chart(
+        df.filter(pl.col("contains_techcompany").is_not_null()),
+        title="contains_techcompany",
+    )
+    .mark_boxplot(extent="min-max")
+    .encode(
+        y="contains_techcompany:N",
         x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
     )
 )
