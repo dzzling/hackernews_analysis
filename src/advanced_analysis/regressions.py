@@ -21,7 +21,11 @@ alt.data_transformers.enable("vegafusion")
 
 # %% Read into dataframe
 
-df = pl.read_csv("./../../data/regression/data.csv", ignore_errors=True)
+df = pl.read_csv(
+    "./../../data/regression/data.csv",
+    ignore_errors=True,
+)
+
 
 # %%
 """ duplicates = df.clone()
@@ -53,7 +57,16 @@ selection = (
         "contains_repos",
         "contains_politicians",
         "contains_buzzwords",
-        "topic",
+        "topic_0",
+        "topic_1",
+        "topic_2",
+        "topic_3",
+        "topic_4",
+        "topic_5",
+        "topic_6",
+        "topic_7",
+        "topic_8",
+        "topic_9",
         "document_length",
     ]
     .drop_nulls()
@@ -61,8 +74,8 @@ selection = (
 )
 """ 
 ## Undersample low scores
-high_score = selection.filter(pl.col("score_right") >= 10)
-low_score = selection.filter(pl.col("score_right") < 10)
+high_score = selection.filter(pl.col("score") >= 10)
+low_score = selection.filter(pl.col("score") < 10)
 low_score_sampled = low_score.sample(n=len(high_score))
 
 selection = pl.concat([low_score_sampled, high_score])
@@ -77,7 +90,12 @@ print(X.shape)
 # y = StandardScaler().fit_transform(y.reshape(-1, 1)).flatten()
 # X = StandardScaler().fit_transform(X)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+
+X_test = X[10 : len(X) // 2]
+X_train = X[len(X) // 2 :]
+y_test = y[10 : len(X) // 2]
+y_train = y[len(X) // 2 :]
 
 # %% Simple Linear regression
 
@@ -104,17 +122,30 @@ print(tree_rules)
 # %% Random forest regression
 
 rf = RandomForestRegressor(
-    n_estimators=800,  # More trees for stability
-    max_depth=None,  # Limits complexity to avoid overfitting
-    min_samples_split=5,  # Prevents small noisy splits
+    n_estimators=100,  # More trees for stability
+    max_depth=10,  # Limits complexity to avoid overfitting
+    min_samples_split=10,  # Prevents small noisy splits
     min_samples_leaf=8,  # Ensures each leaf has enough data
     max_features="sqrt",  # more randomness or all?
     random_state=42,
-    bootstrap=True,
 )
-# %%
 
+# %% Grid search for hyperparameter tuning
+param_grid = {
+    "n_estimators": [400, 900],
+    "max_depth": [15, None],
+    "min_samples_split": [2, 5],
+    "min_samples_leaf": [2, 8],
+    "max_features": ["sqrt", "log2"],
+}
+cv = RandomizedSearchCV(rf, param_distributions=param_grid)
+cv.fit(X_train, y_train)
+print("Best parameters found: ", cv.best_params_)
+print("Best cross-validation score: ", cv.best_score_)
+# %%
 cross_val_score(rf, X, y, cv=5)
+# %%
+print(X[0])
 
 # %% Get decision rules of the most successfull tree in the forest
 
@@ -133,6 +164,11 @@ closest_tree_idx = np.argmin(np.abs(errors - mean_error))
 # Get the most successful tree (closest to the mean)
 best_tree = rf.estimators_[closest_tree_idx]
 
+# Plot the most successful tree
+plt.figure(figsize=(12, 12))
+plot_tree(best_tree, feature_names=selection.columns, fontsize=10, max_depth=4)
+plt.show()
+
 # Export the decision rules of the best tree
 tree_rules = export_text(
     best_tree, feature_names=[f"{selection.columns[i]}" for i in range(X.shape[1])]
@@ -149,7 +185,7 @@ print("Ground truth:")
 print(y_test[0:10])
 
 dict = {x: [] for x in range(10)}
-for tree in range(800):
+for tree in range(100):
     pred = rf.estimators_[tree].predict(X_test[0:10])
     for i in range(10):
         dict[i].append(pred[i])
@@ -158,7 +194,7 @@ res_mead = []
 res_mean = []
 for x, y in dict.items():
     y.sort()
-    res_mead.append(int(y[400]))
+    res_mead.append(int(y[50]))
     res_mean.append(int(sum(y) / len(y)))
 
 print("Mean and median of tree predictions")

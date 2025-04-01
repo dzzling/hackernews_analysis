@@ -6,6 +6,7 @@ from keyword_search import analyse_title, infer_keywords
 import sqlite3
 from nltk.corpus import stopwords
 from collections import Counter
+import copy
 
 # %%
 # Read into dataframe
@@ -132,9 +133,34 @@ ids = [row[0] for row in rows]
 topics = [row[1] for row in rows]
 document_lengths = [row[2] for row in rows]
 
+topics_indv = [[] for _ in range(10)]
+
+topic_range = [i for i in range(0, 10)]
+for i in range(len(topics)):
+    topic_temp = copy.deepcopy(topic_range)
+    topics_indv[topics[i]].append(1)
+
+    topic_temp.remove(topics[i])
+    for j in topic_temp:
+        topics_indv[j].append(0)
+
 topics_df = pl.DataFrame(
-    {"id": ids, "topic": topics, "document_length": document_lengths}
+    {
+        "id": ids,
+        "topic_0": topics_indv[0],
+        "topic_1": topics_indv[1],
+        "topic_2": topics_indv[2],
+        "topic_3": topics_indv[3],
+        "topic_4": topics_indv[4],
+        "topic_5": topics_indv[5],
+        "topic_6": topics_indv[6],
+        "topic_7": topics_indv[7],
+        "topic_8": topics_indv[8],
+        "topic_9": topics_indv[9],
+        "document_length": document_lengths,
+    }
 )
+
 
 df1 = df1.join(topics_df, on="id", how="inner")
 
