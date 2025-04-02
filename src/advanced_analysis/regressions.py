@@ -1,21 +1,21 @@
 # %% Dependicies
 import polars as pl
 import altair as alt
-from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.inspection import permutation_importance
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import GradientBoostingRegressor
 import shap
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import cross_val_score
-import matplotlib.pyplot as plt
-from sklearn.tree import plot_tree
-from sklearn.tree import export_text
 import numpy as np
-
+from tools import (
+    simple_linear_regression,
+    vectorize_and_clean_strings,
+    scale_data,
+    simple_decision_tree,
+    parameter_tuning,
+    get_decision_rules_from_forest,
+    mean_vs_median,
+)
 
 alt.data_transformers.enable("vegafusion")
 
@@ -26,20 +26,11 @@ df = pl.read_csv(
     ignore_errors=True,
 )
 
-
-# %%
-""" duplicates = df.clone()
-duplicates = duplicates.clear()
-
-for url in df["url"].unique():
-    dup = df.filter(pl.col("url") == url)
-    if dup.shape[0] > 1:
-        duplicates.vstack(dup, in_place=True) """
-
 # %%
 
 selection = (
     df[
+        "title",
         "score_right",
         "user_karma",
         "user_post_count",
@@ -72,170 +63,83 @@ selection = (
     .drop_nulls()
     .drop_nans()
 )
-""" 
-## Undersample low scores
-high_score = selection.filter(pl.col("score") >= 10)
-low_score = selection.filter(pl.col("score") < 10)
-low_score_sampled = low_score.sample(n=len(high_score))
 
-selection = pl.concat([low_score_sampled, high_score])
- """
+## Get vectorized titles
+vectorized_words = vectorize_and_clean_strings(
+    selection["title"].to_list(), vector_size=1
+)
+selection = selection.drop("title")
 
+## Get target
 y = selection["score_right"].to_numpy()
-print(y.shape)
+
+## Remove target from features
 selection = selection.drop("score_right")
+
+## Include vectorized titles as features
 X = selection.to_numpy()
+X = np.hstack((X, vectorized_words))
+
+feature_names = selection.columns + [
+    "title_vector_" + str(i) for i in range(vectorized_words.shape[1])
+]
 print(X.shape)
 
-# y = StandardScaler().fit_transform(y.reshape(-1, 1)).flatten()
-# X = StandardScaler().fit_transform(X)
+## Scale data
+# X, y = scale_data(X, y)
 
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-
-X_test = X[10 : len(X) // 2]
-X_train = X[len(X) // 2 :]
-y_test = y[10 : len(X) // 2]
-y_train = y[len(X) // 2 :]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
 
 # %% Simple Linear regression
-
-clf = linear_model.LinearRegression()
-clf.fit(X_train, y_train)
-score = clf.score(X_test, y_test)
-print(score)
-coef = clf.coef_
-print(coef)
-intercept = clf.intercept_
-print(intercept)
-
+simple_linear_regression(X_train, y_train, X_test, y_test)
 ## Result: Still not good (due to weak linearity between features?)
 
 # %% Simple decision tree regression
-regressor = DecisionTreeRegressor()
-regressor.fit(X_train, y_train)
-score = regressor.score(X_test, y_test)
-print(score)
-
-tree_rules = export_text(regressor, feature_names=selection.columns)
-print(tree_rules)
+simple_decision_tree(X_train, y_train, X_test, y_test)
 
 # %% Random forest regression
 
 rf = RandomForestRegressor(
-    n_estimators=100,  # More trees for stability
-    max_depth=10,  # Limits complexity to avoid overfitting
-    min_samples_split=10,  # Prevents small noisy splits
-    min_samples_leaf=8,  # Ensures each leaf has enough data
+    n_estimators=100,  # more trees for stability
+    max_depth=10,  # limits complexity to avoid overfitting
+    min_samples_split=10,  # prevents small noisy splits
+    min_samples_leaf=5,  # ensures each leaf has enough data
     max_features="sqrt",  # more randomness or all?
     random_state=42,
 )
-
-# %% Grid search for hyperparameter tuning
-param_grid = {
-    "n_estimators": [400, 900],
-    "max_depth": [15, None],
-    "min_samples_split": [2, 5],
-    "min_samples_leaf": [2, 8],
-    "max_features": ["sqrt", "log2"],
-}
-cv = RandomizedSearchCV(rf, param_distributions=param_grid)
-cv.fit(X_train, y_train)
-print("Best parameters found: ", cv.best_params_)
-print("Best cross-validation score: ", cv.best_score_)
-# %%
-cross_val_score(rf, X, y, cv=5)
-# %%
-print(X[0])
-
-# %% Get decision rules of the most successfull tree in the forest
-
-# Get the predictions from each tree
-y_preds = np.zeros((len(X_test), rf.n_estimators))
-for i, tree in enumerate(rf.estimators_):
-    y_preds[:, i] = tree.predict(X_test)
-
-# Compute the Mean Squared Error for each tree
-errors = np.mean((y_preds - y_test[:, np.newaxis]) ** 2, axis=0)
-
-# Find the index of the tree closest to the mean error
-mean_error = np.mean(errors)
-closest_tree_idx = np.argmin(np.abs(errors - mean_error))
-
-# Get the most successful tree (closest to the mean)
-best_tree = rf.estimators_[closest_tree_idx]
-
-# Plot the most successful tree
-plt.figure(figsize=(12, 12))
-plot_tree(best_tree, feature_names=selection.columns, fontsize=10, max_depth=4)
-plt.show()
-
-# Export the decision rules of the best tree
-tree_rules = export_text(
-    best_tree, feature_names=[f"{selection.columns[i]}" for i in range(X.shape[1])]
-)
-
-# Print the rules of the most successful tree
-print("Decision rules of the most successful tree:")
-print(tree_rules)
-
-# %% Difference between mean and median of tree predictions
+print(cross_val_score(rf, X, y, cv=3))
 rf.fit(X_train, y_train)
 
-print("Ground truth:")
-print(y_test[0:10])
+# %% Hyperparameter tuning
+parameter_tuning(rf, y_train, X_train)
 
-dict = {x: [] for x in range(10)}
-for tree in range(100):
-    pred = rf.estimators_[tree].predict(X_test[0:10])
-    for i in range(10):
-        dict[i].append(pred[i])
+# %% Get decision rules of the most successfull tree in the forest
+get_decision_rules_from_forest(
+    rf,
+    X_test,
+    y_test,
+    feature_names,
+)
 
-res_mead = []
-res_mean = []
-for x, y in dict.items():
-    y.sort()
-    res_mead.append(int(y[50]))
-    res_mean.append(int(sum(y) / len(y)))
-
-print("Mean and median of tree predictions")
-print(res_mean)
-print(res_mead)
-
-error_mead = []
-error_mean = []
-for i in range(10):
-    error_mead.append(abs(y_test[i] - res_mead[i]))
-    error_mean.append(abs(y_test[i] - res_mean[i]))
-
-print("Total absolute errors")
-print(error_mean)
-print(error_mead)
-
-print("Mean error")
-print(sum(error_mean) / len(error_mean))
-print(sum(error_mead) / len(error_mead))
+# %% Difference between mean and median of tree predictions
+mean_vs_median(rf, X_train, y_train, X_test, y_test)
 
 # %% Get RF feature importance
-
 importances = rf.feature_importances_
 print("Model feature importances:")
-print(selection.columns)
-print(importances)
+importances = pl.DataFrame({"feature": feature_names, "importance": importances})
+print(importances.sort("importance", descending=True))
 
-## Permutation importance
-
+# %% Permutation importance
 print("Permutation importance:")
 result = permutation_importance(rf, X_test, y_test, n_repeats=10, random_state=42)
 perm_importances = result.importances_mean
-perm_std = result.importances_std
-
-print("Feature importances based on accuracy losses during feature permutation:")
-print(perm_importances)
-print(perm_std)
+importances = pl.DataFrame({"feature": feature_names, "importance": perm_importances})
+print(importances.sort("importance", descending=True))
 
 # %% SHAP
 explainer = shap.TreeExplainer(rf)
 shap_values = explainer.shap_values(X_test)
-shap.summary_plot(shap_values, X_test, plot_type="bar")
+shap.summary_plot(shap_values, X_test, feature_names=feature_names, plot_type="bar")
 
 # %%
