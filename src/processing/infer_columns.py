@@ -30,6 +30,13 @@ df3 = df3.with_columns(
 # %%
 # Infer weekday from time
 df1 = df1.with_columns(((((pl.col("time") - 32400) // 86400) + 4) % 7).alias("weekday"))
+df1 = df1.with_columns((pl.col("weekday") == 1).cast(pl.Int8).alias("is_monday"))
+df1 = df1.with_columns((pl.col("weekday") == 2).cast(pl.Int8).alias("is_tuesday"))
+df1 = df1.with_columns((pl.col("weekday") == 3).cast(pl.Int8).alias("is_wednesday"))
+df1 = df1.with_columns((pl.col("weekday") == 4).cast(pl.Int8).alias("is_thursday"))
+df1 = df1.with_columns((pl.col("weekday") == 5).cast(pl.Int8).alias("is_friday"))
+df1 = df1.with_columns((pl.col("weekday") == 6).cast(pl.Int8).alias("is_saturday"))
+df1 = df1.with_columns((pl.col("weekday") == 0).cast(pl.Int8).alias("is_sunday"))
 
 # %%
 # Infer hour of day from time

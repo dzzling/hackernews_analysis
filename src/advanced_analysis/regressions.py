@@ -15,6 +15,8 @@ from tools import (
     parameter_tuning,
     get_decision_rules_from_forest,
     mean_vs_median,
+    undersample,
+    in_out_sample,
 )
 
 alt.data_transformers.enable("vegafusion")
@@ -31,10 +33,16 @@ df = pl.read_csv(
 selection = (
     df[
         "title",
-        "score_right",
+        "score",
         "user_karma",
         "user_post_count",
-        "weekday",
+        "is_monday",
+        "is_tuesday",
+        "is_wednesday",
+        "is_thursday",
+        "is_friday",
+        "is_saturday",
+        "is_sunday",
         "hour",
         "title_length",
         "body_length",
@@ -47,7 +55,11 @@ selection = (
         "contains_yc_companies",
         "contains_repos",
         "contains_politicians",
-        "contains_buzzwords",
+        "contains_classical_news",
+        "contains_startup_news",
+        "contains_blogs",
+        "contains_academic",
+        "contains_tech",
         "topic_0",
         "topic_1",
         "topic_2",
@@ -65,24 +77,28 @@ selection = (
 )
 
 ## Get vectorized titles
-vectorized_words = vectorize_and_clean_strings(
+""" vectorized_words = vectorize_and_clean_strings(
     selection["title"].to_list(), vector_size=1
-)
+) """
 selection = selection.drop("title")
 
+## Undersample low scores
+selection = undersample(selection, limit=2)
+
 ## Get target
-y = selection["score_right"].to_numpy()
+y = selection["score"].to_numpy()
 
 ## Remove target from features
-selection = selection.drop("score_right")
+selection = selection.drop("score")
 
 ## Include vectorized titles as features
 X = selection.to_numpy()
-X = np.hstack((X, vectorized_words))
+# X = np.hstack((X, vectorized_words))
 
-feature_names = selection.columns + [
+""" feature_names = selection.columns + [
     "title_vector_" + str(i) for i in range(vectorized_words.shape[1])
-]
+] """
+feature_names = selection.columns
 print(X.shape)
 
 ## Scale data
@@ -105,10 +121,8 @@ rf = RandomForestRegressor(
     min_samples_split=10,  # prevents small noisy splits
     min_samples_leaf=5,  # ensures each leaf has enough data
     max_features="sqrt",  # more randomness or all?
-    random_state=42,
 )
 print(cross_val_score(rf, X, y, cv=3))
-rf.fit(X_train, y_train)
 
 # %% Hyperparameter tuning
 parameter_tuning(rf, y_train, X_train)
@@ -122,6 +136,7 @@ get_decision_rules_from_forest(
 )
 
 # %% Difference between mean and median of tree predictions
+rf.fit(X_train, y_train)
 mean_vs_median(rf, X_train, y_train, X_test, y_test)
 
 # %% Get RF feature importance
@@ -142,4 +157,19 @@ explainer = shap.TreeExplainer(rf)
 shap_values = explainer.shap_values(X_test)
 shap.summary_plot(shap_values, X_test, feature_names=feature_names, plot_type="bar")
 
+# %% Overfitting Random Forest
+rf_overfit = RandomForestRegressor(
+    n_estimators=1000,
+    max_depth=None,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    max_features=selection.shape[1] - 5,
+    random_state=42,
+)
+# %% In- vs. out-Sample Prediction
+print("Without overfitting:")
+in_out_sample(rf, X_train, y_train, X_test, y_test)
+
+print("With overfitting:")
+in_out_sample(rf_overfit, X_train, y_train, X_test, y_test)
 # %%

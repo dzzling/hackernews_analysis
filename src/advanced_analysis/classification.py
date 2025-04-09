@@ -1,10 +1,14 @@
 # %% Load dependencies
+import random
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 import polars as pl
 import altair as alt
 import numpy as np
+from tools import (
+    in_out_sample,
+)
 
 alt.data_transformers.enable("vegafusion")
 
@@ -14,10 +18,16 @@ df = pl.read_csv("./../../data/regression/data.csv", ignore_errors=True)
 selection = (
     df[
         "id",
-        "score_right",
+        "score",
         "user_karma",
         "user_post_count",
-        "weekday",
+        "is_monday",
+        "is_tuesday",
+        "is_wednesday",
+        "is_thursday",
+        "is_friday",
+        "is_saturday",
+        "is_sunday",
         "hour",
         "title_length",
         "body_length",
@@ -31,7 +41,21 @@ selection = (
         "contains_repos",
         "contains_politicians",
         "contains_buzzwords",
-        "topic",
+        "contains_classical_news",
+        "contains_startup_news",
+        "contains_blogs",
+        "contains_academic",
+        "contains_tech",
+        "topic_0",
+        "topic_1",
+        "topic_2",
+        "topic_3",
+        "topic_4",
+        "topic_5",
+        "topic_6",
+        "topic_7",
+        "topic_8",
+        "topic_9",
         "document_length",
     ]
     .drop_nulls()
@@ -39,39 +63,64 @@ selection = (
 )
 
 ## Undersample low scores
-high_score = selection.filter(pl.col("score_right") > 4)
-low_score = selection.filter(pl.col("score_right") <= 4)
-low_score_sampled = low_score.sample(n=len(high_score) // 2)
-selection = pl.concat([low_score_sampled, high_score])
+high_score = selection.filter(pl.col("score") > 4)
+medium_score = selection.filter((pl.col("score") > 1) & (pl.col("score") <= 4))
+low_score = selection.filter(pl.col("score") <= 1)
+medium_score = medium_score.sample(n=len(high_score))
+low_score_sampled = low_score.sample(n=len(high_score))
+selection = pl.concat([low_score_sampled, medium_score, high_score])
 
 # Save unsampled data for testing
 unsampled = low_score.join(low_score_sampled, on="id", how="anti")
 
 print("Data shape:")
-y = (selection["score_right"]).cut([2, 10], labels=["low", "medium", "high"]).to_numpy()
+y = (selection["score"]).cut([2, 4], labels=["low", "medium", "high"]).to_numpy()
 print("Y: " + str(y.shape))
 y_test_extended = (
-    unsampled["score_right"].cut([2, 10], labels=["low", "medium", "high"]).to_numpy()
+    unsampled["score"].cut([2, 4], labels=["low", "medium", "high"]).to_numpy()
 )
-selection = selection.drop("score_right")
+selection = selection.drop("score", "id")
 X = selection.to_numpy()
 print("X: " + str(X.shape))
-X_test_extended = unsampled.drop("score_right").to_numpy()
+X_test_extended = unsampled.drop("score", "id").to_numpy()
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
 
 # %%
-clf = RandomForestClassifier()
+clf = RandomForestClassifier(
+    n_estimators=100,  # more trees for stability
+    max_depth=10,  # limits complexity to avoid overfitting
+    min_samples_split=10,  # prevents small noisy splits
+    min_samples_leaf=5,  # ensures each leaf has enough data
+    max_features="sqrt",  # more randomness or all?
+    random_state=42,
+)
 cross_val_score(clf, X, y, cv=5)
 
 # %%
+indices = random.sample(range(len(y_test)), 10)
 clf.fit(X_train, y_train)
-res = clf.predict(np.concatenate((X_test, X_test_extended)))
-print(res[len(res) - 10 :])
-print(y_test_extended[len(y_test_extended) - 10 :])
-score = clf.score(
-    np.concatenate((X_test, X_test_extended)), np.concatenate((y_test, y_test_extended))
-)
+print(y_test[indices])
+res = clf.predict(X_test)
+print(res[indices])
+score = clf.score(X_test, y_test)
 print(score)
+
+# %% Overfitted random forest
+
+clf_overfitted = RandomForestClassifier(
+    n_estimators=1000,
+    max_depth=None,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    max_features=selection.shape[1] - 5,
+    random_state=42,
+)
+
+# %% In vs. out of sample
+print("Regular random forest")
+in_out_sample(clf, X_train, y_train, X_test, y_test)
+print("Overfitted random forest")
+in_out_sample(clf_overfitted, X_train, y_train, X_test, y_test)
 
 # %%

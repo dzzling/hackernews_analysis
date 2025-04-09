@@ -9,6 +9,7 @@ from sklearn.preprocessing import normalize
 import polars as pl
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor, export_text, plot_tree
+import random
 
 
 def simple_decision_tree(X_train, y_train, X_test, y_test):
@@ -172,12 +173,16 @@ def mean_vs_median(rf, X_train, y_train, X_test, y_test):
     rf.fit(X_train, y_train)
 
     print("Ground truth:")
-    print(y_test[0:10])
+    # Randomly select 10 indices from the test set
+    indices = random.sample(range(len(y_test)), 10)
+    print(indices)
+    print("--")
+    print(y_test[indices])
 
     dict = {x: [] for x in range(10)}
     for tree in range(100):
-        pred = rf.estimators_[tree].predict(X_test[0:10])
-        for i in range(10):
+        pred = rf.estimators_[tree].predict(X_test[indices])
+        for i, idx in enumerate(indices):
             dict[i].append(pred[i])
 
     res_mead = []
@@ -193,7 +198,7 @@ def mean_vs_median(rf, X_train, y_train, X_test, y_test):
 
     error_mead = []
     error_mean = []
-    for i in range(10):
+    for i in indices:
         error_mead.append(abs(y_test[i] - res_mead[i]))
         error_mean.append(abs(y_test[i] - res_mean[i]))
 
@@ -204,3 +209,20 @@ def mean_vs_median(rf, X_train, y_train, X_test, y_test):
     print("Mean error")
     print(sum(error_mean) / len(error_mean))
     print(sum(error_mead) / len(error_mead))
+
+
+def in_out_sample(rf, X_train, y_train, X_test, y_test):
+    rf.fit(X_train, y_train)
+    y_train_pred = rf.predict(X_train)
+    y_test_pred = rf.predict(X_test)
+    if hasattr(rf, "predict_proba"):  # Check if the random forest is a classifier
+        print("In-sample prediction:", np.mean(y_train == y_train_pred))
+        print("Out-of-sample prediction:", np.mean(y_test == y_test_pred))
+    else:  # Otherwise is regressor
+        print("In-sample prediction:", np.sqrt(np.mean((y_train - y_train_pred) ** 2)))
+        print(
+            "Out-of-sample prediction:", np.sqrt(np.mean((y_test - y_test_pred) ** 2))
+        )
+
+
+# %%
