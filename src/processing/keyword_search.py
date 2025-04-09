@@ -70,6 +70,7 @@ def analyse_title(df, feature_list, feature, counted=False):
         .encode(
             y=f"contains_{feature}:N",
             x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+            tooltip=alt.Tooltip("mean(score)", title="Mean Score"),
         )
     )
     fig.display()
@@ -79,7 +80,10 @@ def analyse_title(df, feature_list, feature, counted=False):
 
 # %%
 def analyse_url(df, feature_list, feature_name):
-    x = "|".join(re.escape(feature) for feature in feature_list)
+    x = "|".join(re.escape(feature.lower()) for feature in feature_list)
+
+    if feature_name == "tech":
+        print(x)
 
     feature_detail = []
     contains_feature = []
@@ -91,9 +95,17 @@ def analyse_url(df, feature_list, feature_name):
             contains_feature.append(0)
             continue
 
-        res = re.findall(f".*({x}).*", row["url"])
-        if len(res) > 0:
-            feature_detail.append(res[0])
+        match = re.match(
+            f"^(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+\.)*({x})\.", row["url"]
+        )
+
+        if (
+            match
+            and match.group(1) != "apps."
+            and match.group(1) != "play."
+            and match.group(1) != "chromewebstore."
+        ):
+            feature_detail.append(match.group(2))
             contains_feature.append(1)
         else:
             feature_detail.append(None)
@@ -113,6 +125,7 @@ def analyse_url(df, feature_list, feature_name):
         .encode(
             y=f"contains_{feature_name}:N",
             x=alt.X("score:Q", scale=alt.Scale(type="log"), title="Score (log scale)"),
+            tooltip=alt.Tooltip("mean(score)", title="Mean Score"),
         )
     )
     fig.display()
@@ -170,5 +183,12 @@ def infer_keywords(df):
         academic = json.load(f)
 
     df = analyse_url(df, academic, "academic")
+
+    # %% URL contains tech companies
+    with open("./../../data/others/techcompanies.json") as f:
+        tech = json.load(f)
+        tech = [techcompany["name"] for techcompany in tech]
+
+    df = analyse_url(df, tech, "tech")
 
     return df
