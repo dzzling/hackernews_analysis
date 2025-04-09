@@ -14,6 +14,7 @@ alt.data_transformers.enable("vegafusion")
 
 # %% Load and prepare data
 df = pl.read_csv("./../../data/regression/data.csv", ignore_errors=True)
+fpdf = pl.read_csv("./../../data/v7/front_page_data.csv", ignore_errors=True)
 
 selection = (
     df[
@@ -62,6 +63,13 @@ selection = (
     .drop_nans()
 )
 
+selection = selection.with_columns(
+    pl.when(selection["id"].is_in(fpdf["id"]))
+    .then(pl.lit("yes"))
+    .otherwise(pl.lit("no"))
+    .alias("on_frontpage")
+)
+
 ## Undersample low scores
 high_score = selection.filter(pl.col("score") > 4)
 medium_score = selection.filter((pl.col("score") > 1) & (pl.col("score") <= 4))
@@ -79,12 +87,18 @@ print("Y: " + str(y.shape))
 y_test_extended = (
     unsampled["score"].cut([2, 4], labels=["low", "medium", "high"]).to_numpy()
 )
-selection = selection.drop("score", "id")
+
+y_other = selection["on_frontpage"].to_numpy()
+print("Y: " + str(y.shape))
+y_test_extended_other = unsampled["on_frontpage"].to_numpy()
+
+selection = selection.drop("score", "id", "on_frontpage")
 X = selection.to_numpy()
 print("X: " + str(X.shape))
-X_test_extended = unsampled.drop("score", "id").to_numpy()
+X_test_extended = unsampled.drop("score", "id", "on_frontpage").to_numpy()
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+
 
 # %%
 clf = RandomForestClassifier(
@@ -122,5 +136,17 @@ print("Regular random forest")
 in_out_sample(clf, X_train, y_train, X_test, y_test)
 print("Overfitted random forest")
 in_out_sample(clf_overfitted, X_train, y_train, X_test, y_test)
+
+# %% Made-it-to-front-page classification
+cross_val_score(clf, X, y_other, cv=5)
+
+# %% Examine some results
+X_train, X_test, y_train_other, y_test_other = train_test_split(
+    X, y_other, test_size=0.25
+)
+clf.fit(X_train, y_train_other)
+y_pred = clf.predict(X_test)
+print(y_test_other[:50])
+print(y_pred[:50])
 
 # %%
