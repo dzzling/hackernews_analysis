@@ -6,11 +6,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.inspection import permutation_importance
 import shap
 from sklearn.model_selection import cross_val_score
-import numpy as np
 from tools import (
     simple_linear_regression,
-    vectorize_and_clean_strings,
-    scale_data,
     simple_decision_tree,
     parameter_tuning,
     get_decision_rules_from_forest,

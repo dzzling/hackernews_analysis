@@ -8,7 +8,6 @@ from nltk.corpus import stopwords, words
 import polars as pl
 from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans
-import sqlalchemy
 
 # %%
 # Database setup

@@ -5,7 +5,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 import polars as pl
 import altair as alt
-import numpy as np
 from tools import (
     in_out_sample,
 )
