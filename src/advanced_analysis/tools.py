@@ -42,6 +42,23 @@ def simple_linear_regression(X_train, y_train, X_test, y_test):
     return
 
 
+def simple_poisson_regression(X_train, y_train, X_test, y_test):
+    # Train model
+    clf = linear_model.PoissonRegressor()
+    clf.fit(X_train, y_train)
+
+    # Evaluate model
+    score = clf.score(X_test, y_test)
+    print("R^2 score:")
+    print(score)
+
+    print(y_test[:10])
+    for i in range(10):
+        print(clf.predict(X_test[i].reshape(1, -1)))
+
+    return
+
+
 def vectorize_and_clean_strings(titles: list[str], vector_size: int = 100):
     # Function to clean text
     def clean_text(text):

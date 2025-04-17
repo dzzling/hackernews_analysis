@@ -8,6 +8,7 @@ import shap
 from sklearn.model_selection import cross_val_score
 from tools import (
     simple_linear_regression,
+    simple_poisson_regression,
     simple_decision_tree,
     parameter_tuning,
     get_decision_rules_from_forest,
@@ -30,7 +31,7 @@ df = pl.read_csv(
 selection = (
     df[
         "title",
-        "score",
+        "score_right",
         "user_karma",
         "user_post_count",
         "is_monday",
@@ -80,13 +81,13 @@ selection = (
 selection = selection.drop("title")
 
 ## Undersample low scores
-selection = undersample(selection, limit=2)
+##selection = undersample(selection, limit=2)
 
 ## Get target
-y = selection["score"].to_numpy()
+y = selection["score_right"].to_numpy()
 
 ## Remove target from features
-selection = selection.drop("score")
+selection = selection.drop("score_right")
 
 ## Include vectorized titles as features
 X = selection.to_numpy()
@@ -105,6 +106,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
 
 # %% Simple Linear regression
 simple_linear_regression(X_train, y_train, X_test, y_test)
+## Result: Still not good (due to weak linearity between features?)
+
+# %% Simple Poisson regression
+simple_poisson_regression(X_train, y_train, X_test, y_test)
 ## Result: Still not good (due to weak linearity between features?)
 
 # %% Simple decision tree regression
