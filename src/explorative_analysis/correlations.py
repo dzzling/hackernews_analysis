@@ -13,31 +13,9 @@ alt.data_transformers.enable("vegafusion")
 
 df = pl.read_csv("./../../data/v1/data.csv", ignore_errors=True)
 
-# %% PCA
 
 relevant_data = df["score", "descendants", "user_karma", "user_post_count"]
 relevant_data = relevant_data.fill_null(0).fill_nan(0)
-
-print(relevant_data.shape[0])
-
-
-## Undersample (Does this make sense?)
-
-low_scores = relevant_data.filter(pl.col("score") < 10).sample(fraction=0.2)
-high_scores = relevant_data.filter(pl.col("score") >= 10)
-relevant_data = pl.concat([low_scores, high_scores])
-
-print(relevant_data.shape[0])
-
-
-# %% PCA - Review
-pca = PCA(n_components=2)
-pca.fit(relevant_data.to_numpy())
-
-print(pca.explained_variance_ratio_)
-print(pca.components_)
-
-## Result: Very little linearity between most features, PCA might be misleading
 
 # %% Visualize relation between features
 
@@ -56,7 +34,7 @@ for i in range(0, len(relevant_data.columns)):
         )
         charts.append(chart)
 
-charts[0] & charts[1] & charts[2] & charts[3] & charts[4]
+charts[0] & charts[1] & charts[2] & charts[3] & charts[4] & charts[5]
 
 # %% Spearmans correlation
 

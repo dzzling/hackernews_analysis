@@ -11,7 +11,7 @@ TABLE_NAME = "webpages"
 
 
 def create_database():
-    """Create SQLite database and table if they don't exist."""
+    # Create SQLite database and table if they don't exist.
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -31,8 +31,10 @@ def create_database():
 
 
 def scrape_and_store(cursor, id, url):
-    """Scrapes a webpage and stores the content in the database."""
+    # Scrapes a webpage and stores the content in the database.
     try:
+
+        # TODO: Use playwright
         response = requests.get(url, timeout=10)
         response.raise_for_status()
 

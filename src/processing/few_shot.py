@@ -17,10 +17,13 @@ def preprocess_function(examples):
 
 
 # %%
+# Fine tune model for later use in classification
 
+# Load the data
 df = pl.read_csv("./../../data/v7/front_page_data.csv", ignore_errors=True)
 df2 = pl.read_csv("./../../data/regression/data.csv", ignore_errors=True)
 
+# Prepare data of successful posts for training
 df2 = df2.head(3000).with_columns(
     pl.when(pl.col("id").is_in(df["id"])).then(1).otherwise(0).alias("in_front_page")
 )
@@ -32,12 +35,14 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.25, random_state=42
 )
 
+# Prepare labels
 id2label = {
     0: "does not gratifiy intellectual curiosity",
     1: "gratifies intellectual curiosity",
 }
 label2id = {v: k for k, v in id2label.items()}
 
+# Prepare the model & tokenizer
 model = AutoModelForSequenceClassification.from_pretrained(
     "distilbert-base-uncased", num_labels=2, label2id=label2id, id2label=id2label
 )
@@ -46,6 +51,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 )
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
+# Finalize data set
 train_data = [
     {
         "input_ids": tokenizer(X_train[i], truncation=True)["input_ids"],
@@ -82,9 +88,11 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
+# Train the model
 trainer.train()
 
 # %%
+# Use the model to classify the data
 
 df = pl.read_csv("./../../data/regression/data.csv", ignore_errors=True)
 titles = df["title"].to_list()
@@ -107,6 +115,7 @@ df_filtered = df.tail(10000).with_columns(
     pl.Series("gratifies_intellectual_curiosity", one_hot)
 )
 
+# Display the relation of score and gratifies intellectual curiosity
 fig = (
     alt.Chart(
         df_filtered.filter(pl.col("gratifies_intellectual_curiosity").is_not_null()),
@@ -123,4 +132,4 @@ fig
 # %%
 df_filtered.write_csv("./../../data/archive/zero_shot_classification_extended_v7_.csv")
 
-# %%
+# --> This is not a feasible characteristic of posts

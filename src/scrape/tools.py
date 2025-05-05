@@ -2,17 +2,19 @@ import csv
 import json
 import sqlite3
 from bs4 import BeautifulSoup
-import polars as pl
 
 
 def save_links(version):
+    # Save links to json from csv
     urls_and_ids = {}
 
-    # TODO: Some of the data is missing, so we need to join the dataframes and check if the url is in the other
-    """ df_30min = pl.read_csv(f"data/{version}/30min_data.csv")
+    # TODO: Some of the urls went missing, so we need to join the dataframes and check if the url is in the other
+    """ 
+    df_30min = pl.read_csv(f"data/{version}/30min_data.csv")
     df_240min = pl.read_csv(f"data/{version}/240min_data.csv")
 
-    df = df_30min.join(df_240min, on="id", how="outer") """
+    df = df_30min.join(df_240min, on="id", how="outer") 
+    """
 
     with open(f"data/{version}/30min_data.csv", "r") as f:
         reader = csv.DictReader(f)
@@ -28,7 +30,7 @@ def transform_to_plain(DB_NAME, SOURCE_TABLE, DEST_TABLE):
     def extract_relevant_text(html):
         soup = BeautifulSoup(html, "html.parser")
 
-        # Extract all text from h1-h6 and p tags
+        # TODO: Advance text extraction logic
         text_list = [
             tag.get_text(strip=True)
             for tag in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p"])

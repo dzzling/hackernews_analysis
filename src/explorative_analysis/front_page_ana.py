@@ -1,9 +1,9 @@
-# %% Imports
+# Imports
 import polars as pl
 import streamlit as st
 
-df = pl.read_csv("data/v2/front_page_data.csv", ignore_errors=True)
-df2 = pl.read_csv("data/v2/30min_data.csv", ignore_errors=True)
+df = pl.read_csv("./../../data/v2/front_page_data.csv", ignore_errors=True)
+df2 = pl.read_csv("./../../data/v2/30min_data.csv", ignore_errors=True)
 
 # Get more data from 30min scraper
 df = df.join(df2, on="id", how="inner")
@@ -17,7 +17,7 @@ print(f"Number of samples: {df.shape[0]}")
 
 tab1, tab2 = st.tabs(["Basic stats", "Distributions"])
 
-# %% Basic stats
+# Basic stats
 
 with tab1:
 
@@ -113,7 +113,7 @@ with tab1:
         st.text("Median user karma:")
         st.write(median_user_karma)
 
-# %% Distributions
+# Distributions
 
 with tab2:
 

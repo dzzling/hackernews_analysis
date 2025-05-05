@@ -9,6 +9,22 @@ import polars as pl
 from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans
 
+
+def clean_text(text):
+    if text is None:
+        return " "
+
+    # Remove non-alphabetic characters
+    text = text.replace("\n", " ")
+    text = re.sub(r"[^a-zA-Z\s]", "", text)
+    # Tokenize and filter non-English words
+    tokens = text.lower().split()
+    tokens = [
+        word for word in tokens if word in english_words and word not in stop_words
+    ]
+    return " ".join(tokens)
+
+
 # %%
 # Database setup
 DB_NAME = "./../../data/v7/scraped_data.db"
@@ -34,21 +50,6 @@ docs = data["doc"].to_list()
 ids = data["id"].to_list()
 titles = data["title"].to_list()
 text = data["text"].to_list()
-
-
-def clean_text(text):
-    if text is None:
-        return " "
-
-    # Remove non-alphabetic characters
-    text = text.replace("\n", " ")
-    text = re.sub(r"[^a-zA-Z\s]", "", text)
-    # Tokenize and filter non-English words
-    tokens = text.lower().split()
-    tokens = [
-        word for word in tokens if word in english_words and word not in stop_words
-    ]
-    return " ".join(tokens)
 
 
 english_words = set(words.words())
