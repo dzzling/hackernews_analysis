@@ -23,38 +23,31 @@ def analyse_title(df, feature_list, feature, counted=False):
     feature_detail = []
     contains_feature = []
 
-    for row in df.iter_rows(named=True):
-        if row["title"] is None:
-            contains_feature.append(None)
-            feature_detail.append(None)
-            continue
+    titles = df["title"].fill_none("").to_list()
+    feature_detail = []
+    contains_feature = []
 
-        found = False
-        count = 0
-        words_in_title = []
-
-        for word in row["title"].split():
-            word = word.lower()
-            if word[0] in feature_dict:
-                for feat in feature_dict[word[0]]:
-                    if word == feat:
-                        if counted:
-                            count += 1
-                            words_in_title.append(feat)
-                        else:
-                            feature_detail.append(feat)
-                            contains_feature.append(1)
-                            found = True
-                            break
-            if not counted and found:
-                break
-
-        if counted:
-            feature_detail.append(str(words_in_title))
-            contains_feature.append(count if count > 0 else 0)
-        elif not found:
+    for title in titles:
+        if not title:
             feature_detail.append(None)
             contains_feature.append(0)
+            continue
+
+        words = title.lower().split()
+        matched_features = [
+            feat
+            for word in words
+            if word[0] in feature_dict
+            for feat in feature_dict[word[0]]
+            if word == feat
+        ]
+
+        if counted:
+            feature_detail.append(matched_features)
+            contains_feature.append(len(matched_features))
+        else:
+            feature_detail.append(matched_features[0] if matched_features else None)
+            contains_feature.append(1 if matched_features else 0)
 
     print(Counter(contains_feature))
 

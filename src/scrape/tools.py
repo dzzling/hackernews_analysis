@@ -25,7 +25,7 @@ def save_links(version):
         json.dump(urls_and_ids, p)
 
 
-def transform_to_plain(DB_NAME, SOURCE_TABLE, DEST_TABLE):
+def transform_to_plain(db_name, source_table, dest_table):
 
     def extract_relevant_text(html):
         soup = BeautifulSoup(html, "html.parser")
@@ -39,13 +39,13 @@ def transform_to_plain(DB_NAME, SOURCE_TABLE, DEST_TABLE):
         return "\n".join(text_list)  # Combine all extracted text
 
     # Connect to SQLite
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
     # Create destination table if not exists
     cursor.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS {DEST_TABLE} (
+        CREATE TABLE IF NOT EXISTS {dest_table} (
             id INTEGER,
             plain TEXT
         )
@@ -54,7 +54,7 @@ def transform_to_plain(DB_NAME, SOURCE_TABLE, DEST_TABLE):
     conn.commit()
 
     # Fetch data from source table
-    cursor.execute(f"SELECT id, html_content FROM {SOURCE_TABLE}")
+    cursor.execute(f"SELECT id, html_content FROM {source_table}")
     rows = cursor.fetchall()
 
     # Process each row
@@ -69,7 +69,7 @@ def transform_to_plain(DB_NAME, SOURCE_TABLE, DEST_TABLE):
     # Insert extracted data into new table
     if data_to_insert:
         cursor.executemany(
-            f"INSERT INTO {DEST_TABLE} (id, plain) VALUES (?, ?)", data_to_insert
+            f"INSERT INTO {dest_table} (id, plain) VALUES (?, ?)", data_to_insert
         )
         conn.commit()
 

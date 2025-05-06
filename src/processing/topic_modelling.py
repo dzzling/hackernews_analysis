@@ -62,8 +62,7 @@ clean_pairs = [
     for (id, doc, text, title) in zip(ids, docs, text, titles)
 ]
 length = [
-    3 if len(doc) > 200 else 2 if len(doc) > 50 else 1
-    for (_, doc, text, title) in clean_pairs
+    3 if len(doc) > 200 else 2 if len(doc) > 50 else 1 for (_, doc, _, _) in clean_pairs
 ]
 
 # Combine doc and title

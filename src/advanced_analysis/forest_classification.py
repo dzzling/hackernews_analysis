@@ -97,6 +97,7 @@ get_decision_rules_from_forest(
 # %%
 # Get RF feature importance
 # measures which features are most important to reduce gini impurity (diversity in nodes)
+# impurity-based feature importance can be biased towards features with high cardinality
 importances = rf.feature_importances_
 print("Model feature importances:")
 importances = pl.DataFrame({"feature": feature_names, "importance": importances})
@@ -117,3 +118,5 @@ print(importances.sort("importance", descending=True))
 explainer = shap.TreeExplainer(rf)
 shap_values = explainer.shap_values(X_test)
 shap.summary_plot(shap_values, X_test, feature_names=feature_names, plot_type="bar")
+
+# %%

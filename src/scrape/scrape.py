@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from tools import save_links, transform_to_plain
 
 # Database setup
-DB_NAME = "data/v7/scraped_data.db"
+VERSION = "v7"
+DB_NAME = f"data/{VERSION}/scraped_data.db"
 TABLE_NAME = "webpages"
 
 
@@ -55,20 +56,19 @@ def scrape_and_store(cursor, id, url):
 
 
 def main():
-    version = "v7"
 
-    save_links(version)
+    save_links(VERSION)
     time.sleep(5)  # Wait for the links to be saved
     create_database()
 
     # List of URLs to scrape
-    with open(f"data/{version}/links.json", "r") as f:
-        URLS = json.load(f)
+    with open(f"data/{VERSION}/links.json", "r") as f:
+        urls = json.load(f)
 
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    for id, url in URLS.items():
+    for id, url in urls.items():
         if url == "":
             continue
         scrape_and_store(cursor, id, url)
