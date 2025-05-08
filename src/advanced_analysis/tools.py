@@ -42,23 +42,6 @@ def simple_linear_regression(X_train, y_train, X_test, y_test):
     return
 
 
-def simple_poisson_regression(X_train, y_train, X_test, y_test):
-    # Train model
-    clf = linear_model.PoissonRegressor()
-    clf.fit(X_train, y_train)
-
-    # Evaluate model
-    score = clf.score(X_test, y_test)
-    print("R^2 score:")
-    print(score)
-
-    print(y_test[:10])
-    for i in range(10):
-        print(clf.predict(X_test[i].reshape(1, -1)))
-
-    return
-
-
 def vectorize_and_clean_strings(titles: list[str], vector_size: int = 100):
     # Function to clean text
     def clean_text(text):
@@ -256,3 +239,34 @@ def in_out_sample(rf, X_train, y_train, X_test, y_test):
         print(
             "Out-of-sample prediction:", np.sqrt(np.mean((y_test - y_test_pred) ** 2))
         )
+
+
+def accuracy_high_scored(est, X_train, y_train, X_test, y_test):
+    est.fit(X_train, y_train)
+    y_test_pred = est.predict(X_test)
+
+    if hasattr(est, "predict_proba"):  # Check if the random forest is a classifier
+        high_scored_indices = [i for i, score in enumerate(y_test) if score == "high"]
+        accuracy = np.sum(
+            [1 if y_test_pred[i] == y_test[i] else 0 for i in high_scored_indices]
+        ) / len(high_scored_indices)
+        print("Accuracy on high scored samples:", accuracy)
+
+        high_scored_test = [y_test[i] for i in high_scored_indices]
+        high_scored_pred = [y_test_pred[i] for i in high_scored_indices]
+
+    else:  # Otherwise is regressor
+        print(y_test[:10])
+        print(y_test[9])
+        high_scored_indices = [
+            i for i, score in enumerate(y_test) if np.exp(score) >= 5
+        ]
+        print("High scored indices:", high_scored_indices)
+        error = np.mean([abs(y_test_pred[i] - y_test[i]) for i in high_scored_indices])
+        print("Error of logs on high scored samples:", error)
+
+        high_scored_test = [np.exp(y_test[i]) for i in high_scored_indices]
+        high_scored_pred = [np.exp(y_test_pred[i]) for i in high_scored_indices]
+
+    print("High scored test samples:", high_scored_test)
+    print("High scored predicted samples:", high_scored_pred)
