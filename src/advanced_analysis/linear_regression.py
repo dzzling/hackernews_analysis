@@ -2,7 +2,7 @@
 import pandas as pd
 import altair as alt
 from sklearn import linear_model
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LassoCV
 import statsmodels.api as sm
@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 score_name = "score_right"
-do_log = True
+lasso_do_log = True
 
 # %%
 df = pd.read_csv("./../../data/regression/data.csv")
@@ -59,10 +59,7 @@ selection = df[
     ]
 ].dropna()
 
-y = selection[score_name]
-if do_log:
-    y = np.log(y)
-
+y = selection[score_name].to_numpy()
 X = selection.drop(score_name, axis=1)
 
 # %%
@@ -102,21 +99,27 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # %%
-# Fit Lasso with cross-validation to find best alpha
+"""Lasso regression"""
+if lasso_do_log:
+    y_lasso = np.log(y)
+else:
+    y_lasso = y
 lasso_cv = LassoCV(cv=5)
-lasso_cv.fit(X_scaled, y)
+lasso_cv.fit(X_scaled, y_lasso)
 
 print(f"Optimal alpha: {lasso_cv.alpha_}")
 
 # Perform lasso regression
-clf = linear_model.Lasso(alpha=lasso_cv.alpha_)
+reg = linear_model.Lasso(alpha=lasso_cv.alpha_)
 
 # R^2 score
-score = cross_val_score(clf, X_scaled, y, cv=3)
+# Will calculate score including training and test set
+score = cross_val_score(reg, X_scaled, y_lasso, cv=3)
 print("Cross-validated R^2 score:", score.mean())
 
 # MSE
-mse = cross_val_score(clf, X_scaled, y, cv=3, scoring="neg_mean_squared_error")
+# Will calculate mse including training and test set
+mse = cross_val_score(reg, X_scaled, y_lasso, cv=3, scoring="neg_mean_squared_error")
 print("Cross-validated MSE:", -mse.mean())
 
 # Check coefficients & indices of selected features
@@ -125,11 +128,12 @@ selected_features = [i for i, coef in enumerate(coefs) if coef != 0]
 
 
 # %%
-# Analyse linear model assumptions
-clf.fit(X_scaled, y)
+"""Analyse linear model assumptions"""
+
+reg.fit(X_scaled, y_lasso)
 
 # 1. Mean residual
-residuals = y - clf.predict(X_scaled)
+residuals = y_lasso - reg.predict(X_scaled)
 mean_residual = np.mean(residuals)
 print("Mean of residuals:", mean_residual)
 
@@ -139,7 +143,8 @@ fig = sm.qqplot(residuals, line="s")
 plt.show()
 
 # Kolmogorov-Smirnov test
-kolmogorov_test = sm.stats.diagnostic.kstest_normal(residuals)
+standardized_residuals = (residuals - np.mean(residuals)) / np.std(residuals)
+kolmogorov_test = sm.stats.diagnostic.kstest_normal(standardized_residuals)
 print("Kolmogorov-Smirnov test:", kolmogorov_test)
 # Result: p < 0.05: Null hypothesis rejected, residuals are not normally distributed
 
@@ -165,4 +170,36 @@ print(vif_data)
 # Some higher than 10, but not too many, lasso regression should help with that
 
 # Log transformation aids with normality (0.37 -> 0.11 ks test) and homoscedasticity (79.14 -> 141.18 lagrange multiplier test)
+
+
 # %%
+"""Poisson regression"""
+
+reg = linear_model.PoissonRegressor()
+
+# R^2 score
+score = cross_val_score(reg, X_scaled, y, cv=3)
+print("Cross-validated R^2 score:", score.mean())
+
+# MSE
+mse = cross_val_score(reg, X_scaled, y, cv=3, scoring="neg_mean_squared_error")
+print("Cross-validated MSE:", -mse.mean())
+
+"""Model assumptions of poisson regression"""
+# 1. Data is count data --> is given: score is a count
+
+# 2. Events are independent
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25)
+reg.fit(X_train, y_train)
+residuals = y_test - reg.predict(X_test)
+dw_test = sm.stats.durbin_watson(residuals)
+print("Durbin-Watson test:", dw_test)
+# --> Nearly 2, so independence is given
+
+# 3. Mean and variance are equal
+mean_y = np.mean(y_train)
+var_y = np.var(y_train)
+print("Mean of y:", mean_y)
+print("Variance of y:", var_y)
+# --> Mean and variance are not equal, poisson regression is not appropriate
+# Outliers effect poisson heavily, as no log transformation is applied
