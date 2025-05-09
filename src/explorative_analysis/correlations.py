@@ -1,7 +1,6 @@
 # %% Dependicies
 import polars as pl
 import altair as alt
-from sklearn.decomposition import PCA
 from scipy.stats import spearmanr
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
